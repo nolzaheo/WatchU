@@ -1,1 +1,0 @@
-server directory를 만들기 위한 임시 파일
