@@ -1,0 +1,13 @@
+
+<h2 class="text-center m-2">소켓으로 보낸 스크린 이미지를 보여준다.</h2>
+
+<button class="btn btn-primary m-1" style="width: 600px;">
+    <img src="{{ url_for('socket.screen_socket_feed', testroom_id=1, student_id=19970327) }}" width="100%"/>
+    <h4>1-19970327</h4>
+</button>
+
+<button class="btn btn-primary m-1" style="width: 600px;">
+    <img src="{{ url_for('socket.screen_socket_feed', testroom_id=1, student_id=19970217) }}" width="100%"/>
+    <h4>1-19970217</h4>
+</button>
+
