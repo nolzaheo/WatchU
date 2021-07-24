@@ -1,0 +1,190 @@
+{% extends 'base.html' %}
+{% block content %}
+
+<div>
+    <div class="container mt-5 ml-5" style="width: 500px;">
+        <h3 class="border-bottom py-2">차단 프로그램 등록</h3>
+        <!-- 차단 프로그램 입력하는 곳-->
+        <form action="" onsubmit="return addProgram();">
+            <input type="text" class="form-control addProgramValue" placeholder="프로그램이름.exe">
+        </form>
+    </div>
+    <!-- 차단 프로그램 리스트-->
+    <div class="container mt-5 ml-5" style="width: 500px;">
+        <h3 class="border-bottom py-2">차단 프로그램 리스트</h3>
+        <ul class="list-group ProgramList" id="plist"></ul>
+    </div>
+</div>
+
+<!-- 학생 사진 등록 -->
+<div>
+<div class="container mt-5 ml-5" style="width: 500px;">
+    <h3 class="border-bottom py-2">학생 등록</h3>
+    <form method="POST" enctype="multipart/form-data" action="{{ url_for('test_room.upload_image') }}">
+        <ul class="list-group mb-3">
+            <li class="list-group-item">학생 사진을 등록하십시오.</li>
+            <li class="list-group-item">파일 이름을 학번으로 설정하십시오.</li>
+        </ul>
+        <!-- 학생 사진 브라우즈 -->
+        <div class="custom-file">
+            <input type="file" class="custom-file-input" id="input_images" name="images[]" multiple>
+            <label class="custom-file-label" data-browse="Browse">Upload one or more files</label>
+        </div>
+    </form>
+</div>
+<!-- 학생 사진 리스트-->
+<div class="container mt-5 ml-5" style="width: 500px;">
+    <h3 class="border-bottom py-2">학생 사진 리스트</h3>
+    <div id="image_list"></div>
+</div>
+</div>
+<button class="btn btn-primary btn-lg" id="makeTestRoomBtn">시험 생성</button>
+
+
+<!-- script -->
+<script>    
+    // 블락 리스트에 추가
+    let i = 0;
+    let program_list = []; // 프로그램 리스트 저장
+    function addProgram() {
+        let value = document.querySelector(".addProgramValue").value;
+        let li = document.createElement("li");
+        let button = document.createElement("button");
+
+        button.className = "btn btn-primary float-right deleteBtn" + i;
+        button.innerHTML = "Delete";
+        li.className = "list-group-item";
+        li.innerHTML = value;
+        li.appendChild(button);
+
+        document.querySelector(".ProgramList").appendChild(li);
+        document.querySelector(".deleteBtn" + i).addEventListener("click", deleteProgram);
+        document.querySelector(".addProgramValue").value = "";
+
+        program_list.push(value);
+        i++;
+        return false;
+    }
+
+    // 블락 리스트에서 삭제
+    function deleteProgram() {
+        const index = $(this).parent().index();
+        console.log(index);
+        program_list.splice(index,1);
+        this.parentNode.parentNode.removeChild(this.parentNode);
+        console.log(program_list);
+    }
+    
+    // 이미지 리스트에 추가
+    const input_images = document.getElementById("input_images");
+    input_images.addEventListener("change", uploadImages, false);
+    let imageBuffer = [];
+    function uploadImages() {
+        const images = this.files;
+        let bufferLen = imageBuffer.length;
+        console.log(bufferLen);
+        for (let i = 0; i < images.length; i++) {
+            const image = images[i];
+            imageBuffer.push(image);
+            let div1 = document.createElement("div");
+            div1.className = "card my-1";
+            div1.style.width = "100%";
+            let div2 = document.createElement("div");
+            div2.className = "row no-gutters";
+
+            let img = document.createElement("img");
+            img.src = URL.createObjectURL(image);
+            img.style = "max-width:100px; max-height: 130px;";
+            div2.appendChild(img);
+
+            let div3 = document.createElement("div");
+            div3.className = "card-body";
+
+            let span = document.createElement("span");
+            span.className = "card-text";
+            span.style = "white-space: pre-line;";
+            span.innerText = image.name;
+            div3.appendChild(span);
+
+            let button = document.createElement("button");
+            button.className = "btn btn-primary float-right deleteImgBtn" + (i + bufferLen);
+            button.innerText = "Delete";
+            button.addEventListener("click", deleteImage);
+            div3.appendChild(button);
+
+            div2.appendChild(div3);
+            div1.appendChild(div2);
+            document.getElementById("image_list").appendChild(div1);
+        }
+    }
+
+    // 이미지 삭제 버튼 클릭 -> 이미지 삭제
+    function deleteImage() {
+        // 인덱스 받아오기
+        let index = $(this).parent().parent().parent().index();
+        // 버퍼에서 이미지 삭제
+        imageBuffer.splice(index,1);
+        // 이미지 카드 삭제
+        this.parentNode.parentNode.parentNode.parentNode.removeChild(this.parentNode.parentNode.parentNode);
+    }
+
+   // 시험 생성 버튼 클릭 -> ajax로 데이터 전송
+   $('#makeTestRoomBtn').click( function () {     
+       // Promise 객체로 동기 처리
+       new Promise((reserve) => {
+            let student_list = [];
+            let image_list = [];
+            // 이미지를 base64방식으로 인코딩하는 과정을 거친다. 
+            for (let i = 0; i < imageBuffer.length; i++) {
+                let reader = new FileReader();
+                reader.onload = () => { 
+                    student_list[i] = imageBuffer[i].name.substring(0, 8);
+                    image_list[i] = reader.result;
+                    // 마지막 이미지일 경우 student_list와 image_list를 넘겨준다.
+                    if (i === imageBuffer.length - 1) {
+                        reserve([student_list, image_list]);
+                    }
+                };
+                reader.onerror = (error) => {
+                    console.log(error);
+                }
+                reader.readAsDataURL(imageBuffer[i]);
+
+
+            }  
+        }).then((result) => {
+            let student_list = result[0]; 
+            let image_list = result[1];
+            console.log(student_list.length);
+            console.log(student_list);
+            console.log(image_list.length);
+            console.log(image_list);
+
+            let postdata = {
+                'block_list': program_list,
+                'student_list': student_list,
+                'image_list': image_list
+            };
+
+            $.ajax({
+                url: '{{ url_for("test_room.ajax") }}',
+                type: 'POST',
+                contentType: false,
+                processData: false,
+                dataType: 'text',
+                data: JSON.stringify(postdata),
+                success: function(response) {
+                    console.log("ajax 통신 성공!" + response);
+                },
+                error: function(request, status, error) {
+                    console.log("ajax 통신 실패!");
+                    console.log(status);
+                    console.log(error);
+                }
+            });
+        });
+   });
+
+</script>
+
+{% endblock %}

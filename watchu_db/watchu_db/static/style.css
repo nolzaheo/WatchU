@@ -1,0 +1,9 @@
+html,body {
+  height: 100%;
+}
+
+#makeTestRoomBtn {
+  position: fixed;
+  bottom: 0;
+  right: 0;
+}
