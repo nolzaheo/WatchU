@@ -1,8 +1,10 @@
 # 프로그램 감시 + 키보드 감시
 import os,signal
 import keyboard
+import time
 from threading import Thread
 from tkinter import messagebox
+import sys
 from sys import platform
 
 
@@ -28,17 +30,17 @@ def mac_killer():
 
 def mac_keyboard_detector():
     while True:
-        if keyboard.is_pressed('ctrl'):
+        if keyboard.is_pressed('cmd+c'):
             #messagebox.showwarning(title="Warning", message="Press Ctrl Key")
-            print("Press Ctrl Key")
+            print("Press cmd+c Key")
 
-        elif keyboard.is_pressed('alt'):
+        elif keyboard.is_pressed('cmd+v'):
             #messagebox.showwarning(title="Warning", message="Press Alt Key")
-            print("Press Alt Key")
+            print("Press cmd+v Key")
+        
+        time.sleep(0.1)
+        continue
 
-        elif keyboard.is_pressed('cmd'):
-            #messagebox.showwarning(title="Warning", message="Press Window Key")
-            print("Press cmd Key")
 
 def win_killer(name):
     while True:
