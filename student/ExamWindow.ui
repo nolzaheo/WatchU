@@ -76,7 +76,7 @@
     <property name="geometry">
      <rect>
       <x>160</x>
-      <y>420</y>
+      <y>410</y>
       <width>181</width>
       <height>41</height>
      </rect>
@@ -89,7 +89,7 @@
      </font>
     </property>
     <property name="accessibleName">
-     <string>startButton</string>
+     <string>finishButton</string>
     </property>
     <property name="styleSheet">
      <string notr="true">background-color:rgb(255, 230, 153)</string>

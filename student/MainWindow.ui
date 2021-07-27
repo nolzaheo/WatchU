@@ -2,6 +2,14 @@
 <ui version="4.0">
  <class>MainWindow</class>
  <widget class="QMainWindow" name="MainWindow">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>360</width>
+    <height>500</height>
+   </rect>
+  </property>
   <property name="minimumSize">
    <size>
     <width>360</width>
@@ -15,7 +23,7 @@
    <string>WatchU</string>
   </property>
   <property name="autoFillBackground">
-   <bool>true</bool>
+   <bool>false</bool>
   </property>
   <property name="styleSheet">
    <string notr="true">background-color:rgb(252, 252, 244)</string>
@@ -31,7 +39,7 @@
     <property name="geometry">
      <rect>
       <x>60</x>
-      <y>160</y>
+      <y>170</y>
       <width>64</width>
       <height>15</height>
      </rect>
@@ -51,7 +59,7 @@
     <property name="geometry">
      <rect>
       <x>60</x>
-      <y>197</y>
+      <y>207</y>
       <width>64</width>
       <height>15</height>
      </rect>
@@ -71,7 +79,7 @@
     <property name="geometry">
      <rect>
       <x>140</x>
-      <y>190</y>
+      <y>200</y>
       <width>151</width>
       <height>31</height>
      </rect>
@@ -88,11 +96,11 @@
      <string notr="true">background-color:rgb(252, 252, 252)</string>
     </property>
    </widget>
-   <widget class="QPushButton" name="startButton">
+   <widget class="QPushButton" name="enterButton">
     <property name="geometry">
      <rect>
       <x>60</x>
-      <y>250</y>
+      <y>260</y>
       <width>231</width>
       <height>41</height>
      </rect>
@@ -105,13 +113,13 @@
      </font>
     </property>
     <property name="accessibleName">
-     <string>startButton</string>
+     <string>enterButton</string>
     </property>
     <property name="styleSheet">
      <string notr="true">background-color:rgb(255, 230, 153)</string>
     </property>
     <property name="text">
-     <string>응 시 하 기</string>
+     <string>시 험 입 장</string>
     </property>
     <property name="autoDefault">
      <bool>true</bool>
@@ -124,7 +132,7 @@
     <property name="geometry">
      <rect>
       <x>140</x>
-      <y>150</y>
+      <y>160</y>
       <width>151</width>
       <height>31</height>
      </rect>
@@ -142,6 +150,30 @@
     </property>
     <property name="styleSheet">
      <string notr="true">background-color:rgb(252, 252, 252)</string>
+    </property>
+   </widget>
+   <widget class="QLabel" name="title">
+    <property name="geometry">
+     <rect>
+      <x>130</x>
+      <y>60</y>
+      <width>101</width>
+      <height>41</height>
+     </rect>
+    </property>
+    <property name="font">
+     <font>
+      <family>나눔스퀘어_ac ExtraBold</family>
+      <pointsize>20</pointsize>
+      <weight>75</weight>
+      <bold>true</bold>
+     </font>
+    </property>
+    <property name="text">
+     <string>WatchU</string>
+    </property>
+    <property name="alignment">
+     <set>Qt::AlignCenter</set>
     </property>
    </widget>
   </widget>
