@@ -10,6 +10,4 @@ def create_app():
     return app
 
 if __name__ == '__main__':
-    # create_app().run(host='172.30.1.47', port='8888', debug=True)
-    create_app().run(host='172.30.1.7', port='8888', debug=True)
-    # create_app().run(debug=True)
+    create_app().run(host='172.30.1.30', port='8080', debug=True)
