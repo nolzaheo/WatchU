@@ -1,3 +1,4 @@
+
 import base64
 from flask import Blueprint, render_template, request, Response, url_for
 from werkzeug.utils import redirect
@@ -8,6 +9,7 @@ image = open('./static/no_screen.png', 'rb').read()
 images = dict()
 images[19970327] = image
 images[19970217] = image
+student_cnt=2 #DB에서 학생 수 가져와야함
 
 import socket
 import threading
@@ -22,41 +24,26 @@ def recvall(conn, length):
         buf += data
     return buf
 
-def receive(sock):
-    while True:
-        # student_id = int(sock.recv(1024).decode('utf-8'))
-        # image_size = int(sock.recv(1024).decode('utf-8'))
-
-        # student_id_len = int.from_bytes(sock.recv(1), byteorder='big')
-        # image_size = int.from_bytes(sock.recv(1), byteorder='big')
-        # print(image_size)
-        # image = sock.recv(image_size)
-        # if len(image) != 0:
-        #     images[student_id] = image
-
-        student_id = int.from_bytes(sock.recv(1024), byteorder='big')
-        # print(f"student_id = {student_id}")
-        size_len = int.from_bytes(sock.recv(1), byteorder='big')
-        # print(f"size_len = {size_len}")
-        size = int.from_bytes(sock.recv(size_len), byteorder='big')
-        # print(f"size = {size}")
-        image = recvall(sock, size)
-        # print(image)
-        if len(image) != 0:
-            images[student_id] = image
+def receive(sock,student_id):
+     while True:
+            size_len = int.from_bytes(sock.recv(1), byteorder='big')
+            size = int.from_bytes(sock.recv(size_len), byteorder='big')
+            image = recvall(sock, size)
+            if len(image) != 0:
+                images[student_id] = image
 
 
 def open_socket():
     serverSock = socket.socket()
-    # serverSock.bind(('172.30.1.47', 8080))
-    serverSock.bind(('172.30.1.7', 8080))
+    serverSock.bind(('172.30.1.30', 8888))
     try:
         print("Listening ....")
-        serverSock.listen(2)
-        while True:
+        serverSock.listen(student_cnt)
+        for _ in range(student_cnt):
             connectionSock, addr = serverSock.accept()
             print("Accepted ....", addr)
-            receiver = threading.Thread(target=receive, args=(connectionSock,))
+            student_id = int.from_bytes(connectionSock.recv(1024), byteorder='big')
+            receiver = threading.Thread(target=receive, args=(connectionSock,student_id))
             receiver.start()
     finally:
         serverSock.close()
