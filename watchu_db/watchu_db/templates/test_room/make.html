@@ -41,9 +41,8 @@
 
 <button class="btn btn-primary btn-lg" id="makeTestRoomBtn" style="position: fixed; bottom: 5%; left: 2%;">시험 생성</button>
 
-<!-- script -->
 <script>    
-    // 시험 시간 설정
+    // 현재 날짜로 설정
     let today = new Date().toISOString();
     let dateForm = document.getElementById('dateForm');
     dateForm.value = today.slice(0, 10);
@@ -60,16 +59,16 @@
         $('#endtimeForm').attr({'value': h + ':' + m});
     });
 
-    // 블락 리스트에 추가
-    let i = 0;
-    let program_list = []; // 프로그램 리스트 저장
+    // 차단 프로그램 리스트에 추가
+    let block_list = [];
     function addProgram() {
+        let i = block_list.length;
         let value = document.querySelector(".addProgramValue").value;
         let li = document.createElement("li");
         let button = document.createElement("button");
 
         button.className = "btn btn-primary float-right deleteBtn" + i;
-        button.innerHTML = "Delete";
+        button.innerHTML = "삭제";
         li.className = "list-group-item";
         li.innerHTML = value;
         li.appendChild(button);
@@ -78,31 +77,27 @@
         document.querySelector(".deleteBtn" + i).addEventListener("click", deleteProgram);
         document.querySelector(".addProgramValue").value = "";
 
-        program_list.push(value);
-        i++;
+        block_list.push(value);
         return false;
     }
 
-    // 블락 리스트에서 삭제
+    // 차단 프로그램 리스트에서 삭제
     function deleteProgram() {
         const index = $(this).parent().index();
-        console.log(index);
-        program_list.splice(index,1);
+        block_list.splice(index,1);
         this.parentNode.parentNode.removeChild(this.parentNode);
-        console.log(program_list);
     }
     
-    // 이미지 리스트에 추가
+    // 학생 리스트에 추가
+    let image_list = [];
     const input_images = document.getElementById("input_images");
     input_images.addEventListener("change", uploadImages, false);
-    let imageBuffer = [];
     function uploadImages() {
         const images = this.files;
-        let bufferLen = imageBuffer.length;
-        console.log(bufferLen);
+        let bufferLen = image_list.length;
         for (let i = 0; i < images.length; i++) {
             const image = images[i];
-            imageBuffer.push(image);
+            image_list.push(image);
             let div1 = document.createElement("div");
             div1.className = "card mt-1 mb-1";
             div1.style.width = "100%";
@@ -125,7 +120,7 @@
 
             let button = document.createElement("button");
             button.className = "btn btn-primary float-right deleteImgBtn" + (i + bufferLen);
-            button.innerText = "Delete";
+            button.innerText = "삭제";
             button.addEventListener("click", deleteImage);
             div3.appendChild(button);
 
@@ -135,25 +130,18 @@
         }
     }
 
-    // 이미지 삭제 버튼 클릭 -> 이미지 삭제
+    // 학생 리스트에서 삭제
     function deleteImage() {
-        // 인덱스 받아오기
         let index = $(this).parent().parent().parent().index();
-        // 버퍼에서 이미지 삭제
-        imageBuffer.splice(index,1);
-        // 이미지 카드 삭제
+        image_list.splice(index,1);
         this.parentNode.parentNode.parentNode.parentNode.removeChild(this.parentNode.parentNode.parentNode);
     }
 
-    // 시험 생성 버튼 클릭 -> ajax로 데이터 전송
+    // 시험 생성 버튼 클릭 시 서버로 데이터 전송
     $('#makeTestRoomBtn').click( function () {     
-    //    let con = confirm("시험을 생성하시겠습니까?");
-    //    if (con == true) {
-
-        // 차단 프로그램 리스트 스트링으로 변환
-        let block_list = "";
-        for (let i = 0; i < program_list.length; i++) {
-                block_list += program_list[i] +";"
+        let block_list_string = "";
+        for (let i = 0; i < block_list.length; i++) {
+                block_list_string += block_list[i] +";"
         }
         
         let date = document.getElementById('dateForm').value;
@@ -163,13 +151,13 @@
         let formdata = new FormData();
         formdata.append('test_room_id', '{{ test_room_id }}');
         formdata.append('professor_id', '{{ g.user.id }}');
-        formdata.append('block_list', block_list);
+        formdata.append('block_list', block_list_string);
         formdata.append('date', date);
         formdata.append('start_time', start_time);
         formdata.append('end_time', end_time);
-        formdata.append('length', imageBuffer.length);
-        for (let i = 0; i < imageBuffer.length; i++) {
-            formdata.append(i, imageBuffer[i]);
+        formdata.append('length', image_list.length);
+        for (let i = 0; i < image_list.length; i++) {
+            formdata.append(i, image_list[i]);
         }
             
         $.ajax({
@@ -189,9 +177,8 @@
         });
 
         // 메뉴 페이지로 이동
+        // alert("시험이 생성되었습니다!!");
         location.href="{{ url_for('test_room.menu') }}";
-        // alert("시헙이 생성되었습니다!!");
-       
    });
 
 </script>
