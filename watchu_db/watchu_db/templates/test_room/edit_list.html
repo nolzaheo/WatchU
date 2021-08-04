@@ -1,0 +1,17 @@
+{% extends 'base.html' %}
+{% block content %}
+
+<div class="container mt-5 pt-5" style="width: 500px;">
+    <h3 class="border-bottom py-2">수정 가능한 시험 리스트</h3>
+    <ul class="list-group ProgramList">
+        {% for t in test_room_list %}
+        <li class="list-group-item mt-2">
+            시험번호 : {{ t }}
+            <a href="{{ url_for('test_room.edit', test_room_id=t) }}" class="btn btn-primary m-1 float-right">수정</a>
+            <a href="{{ url_for('test_room.delete', test_room_id=t) }}" class="btn btn-primary m-1 float-right">삭제</a>
+        </li>
+        {% endfor %}
+    </ul>
+</div>
+
+{% endblock %}
