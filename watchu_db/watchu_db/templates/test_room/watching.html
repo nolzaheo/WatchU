@@ -1,0 +1,31 @@
+{% extends 'base.html' %}
+{% block content %}
+
+<h2 class="border-bottom px-3 py-3">시험 번호 : {{ test_room_id }}</h2>
+<h2 class="text-center m-2">시험중!!</h2>
+
+<div class="container">
+    {% for student_id in student_list %}
+    <a href="{{ url_for('test_room.watching_detail', test_room_id=test_room_id, student_id=student_id) }}" class="btn btn-primary m-1" id="{{ student_id }}"style="width: 30%;">
+        <img src="{{ url_for('test_room.screen_socket_feed', test_room_id=test_room_id, student_id=student_id) }}" width="100%"/>
+        <h4>{{ student_id }}</h4>
+    </a>
+    {% endfor %}
+</div>
+
+<button class="btn btn-primary btn-lg" id="changeColor" style="position: fixed; bottom: 5%; right: 2%;">색상 변경</button>
+
+<script>
+    /* 색상 변경 테스트 */
+    $('#changeColor').click(() => {
+        // 클릭 시 빨간색으로 색상 변경
+        $('#{{ student_list[0] }}').css('background-color', 'red');
+        
+        // 3초 후 색상 복원
+        setTimeout(() => {
+            $('#{{ student_list[0] }}').css('background-color', '#ffe699');
+        }, 3000); 
+    });
+</script>
+
+{% endblock %}

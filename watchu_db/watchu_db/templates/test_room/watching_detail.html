@@ -1,0 +1,15 @@
+{% extends 'base.html' %}
+{% block content %}
+
+<h2 class="border-bottom px-3 py-3">시험 번호 : {{ test_room_id }} 학생 번호 : {{ student_id }}</h2>
+
+<div class="container m-5 float-left" style="width: 40%;">
+    <h3 class="border-bottom py-2">학생 화면</h3>
+    <img src="{{ url_for('test_room.screen_socket_feed', test_room_id=test_room_id, student_id=student_id) }}" width="100%"/>
+</div>
+
+<div class="container m-5 float-left" style="width: 40%;">
+    <h3 class="border-bottom py-2">부정행위 로그</h3>
+</div>
+
+{% endblock %}

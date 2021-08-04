@@ -1,6 +1,10 @@
 <!-- 네비게이션바 -->
 <nav class="navbar navbar-light navbar-expand-lg border-bottom" style="background-color: #ffe699;">
+    {% if g.user %}
+    <a class="navbar-brand" href="{{ url_for('test_room.menu') }}">WATCHU</a>
+    {% else %}
     <a class="navbar-brand" href="{{ url_for('main.main') }}">WATCHU</a>
+    {% endif %}
     <button class="navbar-toggler ml-auto" type="button" data-toggle="collapse" data-target="#navbarNav"
         aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
         <span class="navbar-toggler-icon"></span>

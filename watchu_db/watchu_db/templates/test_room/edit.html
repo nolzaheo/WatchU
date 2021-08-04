@@ -6,10 +6,10 @@
 <div class="container m-3 float-left" style="width: 32%;">
     <h3 class="border-bottom py-2">시험 시간 설정</h3>
     <form>
-        <input type="date" id="dateForm">
-        <input type="time" id="starttimeForm">
+        <input type="date" id="dateForm" value='{{ date }}'>
+        <input type="time" id="starttimeForm" value='{{ start_time }}'>
         ~
-        <input type="time" id="endtimeForm">
+        <input type="time" id="endtimeForm" value='{{ end_time }}'>
     </form>
 </div>
 
@@ -36,19 +36,22 @@
         </div>
     </form>
     <h3 class="border-bottom py-2 mt-5">학생 사진 리스트</h3>
-    <div id="image_list" style="overflow: scrooo; height: 500px;"></div>
+    <div id="image_list"></div>
 </div>
 
-<button class="btn btn-primary btn-lg" id="makeTestRoomBtn" style="position: fixed; bottom: 5%; left: 2%;">시험 생성</button>
+<div>
+    {% for img in imageBuffer %}
+        {{ img }}
+    {% endfor %}
+</div>
 
-<!-- script -->
-<script>    
-    // 시험 시간 설정
-    let today = new Date().toISOString();
-    let dateForm = document.getElementById('dateForm');
-    dateForm.value = today.slice(0, 10);
-    dateForm.min = today.slice(0, 10);
+<div style="position: fixed; bottom: 5%; left: 2%;">
+    <button class="btn btn-primary btn-lg" id="editTestRoomBtn">시험 수정</button>
+    <a href="{{ url_for('test_room.delete', test_room_id=test_room_id) }}" class="btn btn-primary btn-lg m-1">시험 삭제</a>
+</div>
 
+
+<script>
     // 시작 시간 변경 시 종료 시간 자동 변경 (+1시간)
     $('#starttimeForm').change(() => {
         startTime = $('#starttimeForm').val();
@@ -60,11 +63,13 @@
         $('#endtimeForm').attr({'value': h + ':' + m});
     });
 
-    // 블락 리스트에 추가
-    let i = 0;
+    // 프로그램 차단 리스트에 추가
     let program_list = []; // 프로그램 리스트 저장
-    function addProgram() {
-        let value = document.querySelector(".addProgramValue").value;
+    function addProgram(value = null) {
+        let i = program_list.length;
+        if (value == null) {
+            value = document.querySelector(".addProgramValue").value;
+        }
         let li = document.createElement("li");
         let button = document.createElement("button");
 
@@ -79,11 +84,10 @@
         document.querySelector(".addProgramValue").value = "";
 
         program_list.push(value);
-        i++;
         return false;
     }
 
-    // 블락 리스트에서 삭제
+    // 프로그램 차단 리스트에서 삭제
     function deleteProgram() {
         const index = $(this).parent().index();
         console.log(index);
@@ -91,17 +95,19 @@
         this.parentNode.parentNode.removeChild(this.parentNode);
         console.log(program_list);
     }
-    
-    // 이미지 리스트에 추가
+
+    // 학생 리스트에 추가
     const input_images = document.getElementById("input_images");
     input_images.addEventListener("change", uploadImages, false);
     let imageBuffer = [];
-    function uploadImages() {
-        const images = this.files;
+    function uploadImages(images = null) {
+        if (images.type == "change") {
+            images = this.files;
+        }
         let bufferLen = imageBuffer.length;
-        console.log(bufferLen);
         for (let i = 0; i < images.length; i++) {
-            const image = images[i];
+            let image = images[i];
+            console.log(image);
             imageBuffer.push(image);
             let div1 = document.createElement("div");
             div1.className = "card mt-1 mb-1";
@@ -135,7 +141,7 @@
         }
     }
 
-    // 이미지 삭제 버튼 클릭 -> 이미지 삭제
+    // 학생 리스트에서 삭제
     function deleteImage() {
         // 인덱스 받아오기
         let index = $(this).parent().parent().parent().index();
@@ -145,10 +151,65 @@
         this.parentNode.parentNode.parentNode.parentNode.removeChild(this.parentNode.parentNode.parentNode);
     }
 
+    // BLOB 데이터를 파일로 변환
+    function blobToFile(theBlob, fileName){    
+        // theBlob = new Blob(theBlob);
+        return new File([theBlob], fileName, { lastModified: new Date().getTime(), type: 'image/jpeg' })
+    }
+
+    function _base64ToArrayBuffer(base64) {
+        var binary_string = window.atob(base64);
+        var len = binary_string.length;
+        var bytes = new Uint8Array(len);
+        for (var i = 0; i < len; i++) {
+            bytes[i] = binary_string.charCodeAt(i);
+        }
+        return bytes.buffer;
+    }
+
+    const dataURLtoFile = (dataurl, fileName) => {
+        var arr = dataurl.split(','),
+            mime = arr[0].match(/:(.*?);/)[1],
+            bstr = atob(arr[1]), 
+            n = bstr.length, 
+            u8arr = new Uint8Array(n);
+            
+        while(n--){
+            u8arr[n] = bstr.charCodeAt(n);
+        }
+        return new File([u8arr], fileName, {type:mime});
+    }
+
+    // 기존 데이터 로딩
+    $(document).ready(() => {
+        // 프로그램 차단 리스트 로딩
+        '{% for b in block_list %}'
+            addProgram('{{ b }}');
+        '{% endfor %}'
+
+        // 학생 리스트 로딩
+        let images = [];
+        '{% for img in imageBuffer %}'
+            // console.log('{{ img[:10] }}');
+            // console.log(typeof '{{ img }}');
+            // console.log('{{ img }}');
+            // console.log(atob('{{ img }}'));
+            // console.log(typeof _base64ToArrayBuffer('{{ img }}'));
+            // console.log(typeof Base64Binary.decodeArrayBuffer('{{ img }}')); 
+            // console.log(typeof Buffer.from('{{ img }}', 'base64'));
+            image = "data:image/jpeg;base64," + '{{ img }}';
+            file = dataURLtoFile(image, '{{ student_list[loop.index] }}' + ".jpg");
+            console.log(file);
+            images.push(file);
+            // images.push(blobToFile( blobToFile(image), '{{ student_list[loop.index] }}' + ".jpg"));
+            // images.push('{{ img }}');
+        '{% endfor %}'
+        uploadImages(images);
+    });
+
     // 시험 생성 버튼 클릭 -> ajax로 데이터 전송
-    $('#makeTestRoomBtn').click( function () {     
-    //    let con = confirm("시험을 생성하시겠습니까?");
-    //    if (con == true) {
+    $('#editTestRoomBtn').click( () => {     
+        // let con = confirm("시험을 수정하시겠습니까?");
 
         // 차단 프로그램 리스트 스트링으로 변환
         let block_list = "";
@@ -173,12 +234,14 @@
         }
             
         $.ajax({
-            url: '{{ url_for("test_room.make_ajax") }}',
+            url: '{{ url_for("test_room.edit_ajax") }}',
             type: 'POST',
             contentType: false,
             processData: false,
             data: formdata,
             success: function(response) {
+                console.log(block_list);
+                console.log(imageBuffer);
                 console.log("ajax 통신 성공!" + response);
             },
             error: function(request, status, error) {
@@ -189,10 +252,10 @@
         });
 
         // 메뉴 페이지로 이동
-        location.href="{{ url_for('test_room.menu') }}";
-        // alert("시헙이 생성되었습니다!!");
+        // location.href = "{{ url_for('test_room.menu') }}";
+        alert("시험이 수정되었습니다!!");
        
-   });
+    });
 
 </script>
 

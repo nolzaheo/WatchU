@@ -1,0 +1,16 @@
+{% extends 'base.html' %}
+{% block content %}
+
+<div class="container mt-5 pt-5" style="width: 500px;">
+    <h3 class="border-bottom py-2">시험 리스트</h3>
+    <ul class="list-group ProgramList">
+        {% for test_room_id in test_room_list %}
+        <li class="list-group-item mt-2">
+            시험번호 : {{ t }}
+            <a href="{{ url_for('test_room.watching', test_room_id=test_room_id) }}" class="btn btn-primary float-right">입장</a>
+        </li>
+        {% endfor %}
+    </ul>
+</div>
+
+{% endblock %}
