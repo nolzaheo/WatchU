@@ -39,15 +39,9 @@
     <div id="image_list"></div>
 </div>
 
-<div>
-    {% for img in imageBuffer %}
-        {{ img }}
-    {% endfor %}
-</div>
-
 <div style="position: fixed; bottom: 5%; left: 2%;">
-    <button class="btn btn-primary btn-lg" id="editTestRoomBtn">시험 수정</button>
     <a href="{{ url_for('test_room.delete', test_room_id=test_room_id) }}" class="btn btn-primary btn-lg m-1">시험 삭제</a>
+    <button class="btn btn-primary btn-lg" id="editTestRoomBtn">시험 수정</button>
 </div>
 
 
@@ -64,9 +58,9 @@
     });
 
     // 프로그램 차단 리스트에 추가
-    let program_list = []; // 프로그램 리스트 저장
+    let block_list = [];
     function addProgram(value = null) {
-        let i = program_list.length;
+        let i = block_list.length;
         if (value == null) {
             value = document.querySelector(".addProgramValue").value;
         }
@@ -74,7 +68,7 @@
         let button = document.createElement("button");
 
         button.className = "btn btn-primary float-right deleteBtn" + i;
-        button.innerHTML = "Delete";
+        button.innerHTML = "삭제";
         li.className = "list-group-item";
         li.innerHTML = value;
         li.appendChild(button);
@@ -83,7 +77,7 @@
         document.querySelector(".deleteBtn" + i).addEventListener("click", deleteProgram);
         document.querySelector(".addProgramValue").value = "";
 
-        program_list.push(value);
+        block_list.push(value);
         return false;
     }
 
@@ -91,24 +85,24 @@
     function deleteProgram() {
         const index = $(this).parent().index();
         console.log(index);
-        program_list.splice(index,1);
+        block_list.splice(index,1);
         this.parentNode.parentNode.removeChild(this.parentNode);
-        console.log(program_list);
+        console.log(block_list);
     }
 
     // 학생 리스트에 추가
+    let image_list = [];
     const input_images = document.getElementById("input_images");
     input_images.addEventListener("change", uploadImages, false);
-    let imageBuffer = [];
     function uploadImages(images = null) {
         if (images.type == "change") {
             images = this.files;
         }
-        let bufferLen = imageBuffer.length;
+        let bufferLen = image_list.length;
         for (let i = 0; i < images.length; i++) {
             let image = images[i];
             console.log(image);
-            imageBuffer.push(image);
+            image_list.push(image);
             let div1 = document.createElement("div");
             div1.className = "card mt-1 mb-1";
             div1.style.width = "100%";
@@ -131,7 +125,7 @@
 
             let button = document.createElement("button");
             button.className = "btn btn-primary float-right deleteImgBtn" + (i + bufferLen);
-            button.innerText = "Delete";
+            button.innerText = "삭제";
             button.addEventListener("click", deleteImage);
             div3.appendChild(button);
 
@@ -143,30 +137,28 @@
 
     // 학생 리스트에서 삭제
     function deleteImage() {
-        // 인덱스 받아오기
         let index = $(this).parent().parent().parent().index();
-        // 버퍼에서 이미지 삭제
-        imageBuffer.splice(index,1);
-        // 이미지 카드 삭제
+        image_list.splice(index,1);
         this.parentNode.parentNode.parentNode.parentNode.removeChild(this.parentNode.parentNode.parentNode);
     }
 
     // BLOB 데이터를 파일로 변환
-    function blobToFile(theBlob, fileName){    
-        // theBlob = new Blob(theBlob);
-        return new File([theBlob], fileName, { lastModified: new Date().getTime(), type: 'image/jpeg' })
-    }
+    // function blobToFile(theBlob, fileName){    
+    //     // theBlob = new Blob(theBlob);
+    //     return new File([theBlob], fileName, { lastModified: new Date().getTime(), type: 'image/jpeg' })
+    // }
 
-    function _base64ToArrayBuffer(base64) {
-        var binary_string = window.atob(base64);
-        var len = binary_string.length;
-        var bytes = new Uint8Array(len);
-        for (var i = 0; i < len; i++) {
-            bytes[i] = binary_string.charCodeAt(i);
-        }
-        return bytes.buffer;
-    }
+    // function _base64ToArrayBuffer(base64) {
+    //     var binary_string = window.atob(base64);
+    //     var len = binary_string.length;
+    //     var bytes = new Uint8Array(len);
+    //     for (var i = 0; i < len; i++) {
+    //         bytes[i] = binary_string.charCodeAt(i);
+    //     }
+    //     return bytes.buffer;
+    // }
 
+    // 이미지 url을 파일 형태로 변환
     const dataURLtoFile = (dataurl, fileName) => {
         var arr = dataurl.split(','),
             mime = arr[0].match(/:(.*?);/)[1],
@@ -189,32 +181,23 @@
 
         // 학생 리스트 로딩
         let images = [];
-        '{% for img in imageBuffer %}'
-            // console.log('{{ img[:10] }}');
-            // console.log(typeof '{{ img }}');
-            // console.log('{{ img }}');
-            // console.log(atob('{{ img }}'));
-            // console.log(typeof _base64ToArrayBuffer('{{ img }}'));
-            // console.log(typeof Base64Binary.decodeArrayBuffer('{{ img }}')); 
-            // console.log(typeof Buffer.from('{{ img }}', 'base64'));
+        '{% for img in image_list %}'
+            console.log('{{ student_list[loop.index - 1] }}');
             image = "data:image/jpeg;base64," + '{{ img }}';
-            file = dataURLtoFile(image, '{{ student_list[loop.index] }}' + ".jpg");
+            file = dataURLtoFile(image, '{{ student_list[loop.index - 1] }}' + ".jpg");
             console.log(file);
             images.push(file);
-            // images.push(blobToFile( blobToFile(image), '{{ student_list[loop.index] }}' + ".jpg"));
-            // images.push('{{ img }}');
         '{% endfor %}'
         uploadImages(images);
     });
 
-    // 시험 생성 버튼 클릭 -> ajax로 데이터 전송
+    // 시험 수정 버튼 클릭 시 서버로 데이터 전송
     $('#editTestRoomBtn').click( () => {     
         // let con = confirm("시험을 수정하시겠습니까?");
 
-        // 차단 프로그램 리스트 스트링으로 변환
-        let block_list = "";
-        for (let i = 0; i < program_list.length; i++) {
-                block_list += program_list[i] +";"
+        let block_list_string = "";
+        for (let i = 0; i < block_list.length; i++) {
+                block_list_string += block_list[i] +";"
         }
         
         let date = document.getElementById('dateForm').value;
@@ -224,13 +207,13 @@
         let formdata = new FormData();
         formdata.append('test_room_id', '{{ test_room_id }}');
         formdata.append('professor_id', '{{ g.user.id }}');
-        formdata.append('block_list', block_list);
+        formdata.append('block_list', block_list_string);
         formdata.append('date', date);
         formdata.append('start_time', start_time);
         formdata.append('end_time', end_time);
-        formdata.append('length', imageBuffer.length);
-        for (let i = 0; i < imageBuffer.length; i++) {
-            formdata.append(i, imageBuffer[i]);
+        formdata.append('length', image_list.length);
+        for (let i = 0; i < image_list.length; i++) {
+            formdata.append(i, image_list[i]);
         }
             
         $.ajax({
@@ -241,7 +224,7 @@
             data: formdata,
             success: function(response) {
                 console.log(block_list);
-                console.log(imageBuffer);
+                console.log(image_list);
                 console.log("ajax 통신 성공!" + response);
             },
             error: function(request, status, error) {
@@ -252,9 +235,8 @@
         });
 
         // 메뉴 페이지로 이동
-        // location.href = "{{ url_for('test_room.menu') }}";
-        alert("시험이 수정되었습니다!!");
-       
+        // alert("시험이 수정되었습니다!!");
+        location.href = "{{ url_for('test_room.menu') }}";
     });
 
 </script>

@@ -9,6 +9,7 @@ from watchu_db.models import Professor
 
 bp = Blueprint('auth', __name__, url_prefix='/auth')
 
+
 def login_not_required(view):
     """ 로그인 여부 확인 데코레이터 """
     @functools.wraps(view)
@@ -18,11 +19,11 @@ def login_not_required(view):
         return view(**kwargs)
     return wrapped_view
 
-@bp.route('/login_professor/', methods=('GET', 'POST'))
-@bp.route('/')
+@bp.route('/login_professor/', methods=['GET', 'POST'])
+@bp.route('/', methods=['GET', 'POST'])
 @login_not_required
 def login_professor():
-    """ 교수 로그인"""
+    """ 교수 로그인 """
     form = ProfessorLoginForm()
     if request.method == 'POST' and form.validate_on_submit():
         error = None
@@ -38,7 +39,8 @@ def login_professor():
         flash(error)
     return render_template('auth/login_professor.html', form=form)
 
-@bp.route('/signup_professor/', methods=('GET', 'POST'))
+
+@bp.route('/signup_professor/', methods=['GET', 'POST'])
 @login_not_required
 def signup_professor():
     """ 교수 회원가입 """
@@ -57,6 +59,7 @@ def signup_professor():
             flash('이미 존재하는 교수입니다.')
     return render_template('/auth/signup_professor.html', form=form)
 
+
 @bp.before_app_request
 def load_logged_in_professor():
     professor_id = session.get('professor_id')
@@ -65,11 +68,13 @@ def load_logged_in_professor():
     else:
         g.user = Professor.query.get(professor_id)
 
+
 @bp.route('/logout_professor/')
 def logout_professor():
     """ 교수 로그아웃 """
     session.clear()
     return redirect(url_for('auth.login_professor'))
+
 
 def login_required(view):
     """ 로그인 여부 확인 데코레이터 """
@@ -78,6 +83,5 @@ def login_required(view):
         if g.user is None:
             return redirect(url_for('auth.login_professor'))
         return view(**kwargs)
+
     return wrapped_view
-
-
