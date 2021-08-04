@@ -1,10 +1,15 @@
 # -*- coding: utf-8 -*-
 import sys, cv2, numpy, time
+import face_auth as auth
+from threading import Thread
 from PyQt5 import QtWidgets
 from PyQt5.uic import loadUi
 from PyQt5.QtWidgets import *
 from PyQt5.QtGui import *
 from PyQt5.QtCore import *
+
+def face_authorization(name):
+    return name
 
 class MainWindow(QMainWindow):
 
@@ -46,6 +51,8 @@ class CameraWindow(QMainWindow):
         self.match_false.hide()
         CameraWindow.get_sn=sn
         CameraWindow.get_en=en
+        self.face_auth = auth.FaceRecog()
+        print(self.face_auth.known_face_names)
 
         #카메라 뿌리기
         self.cpt=cv2.VideoCapture(0)
@@ -53,14 +60,14 @@ class CameraWindow(QMainWindow):
         self.img_frame.setScaledContents(True)
         self.start()
 
-        tmp=True # 테스트용. 본인 일치 시 true, 아닐 시 false
-        if tmp==True:
-            self.startButton.show()
-            self.match_true.show()
-            self.startButton.clicked.connect(self.gotoStartExam)
-        else :
-            self.warning_msg.show()
-            self.match_false.show()
+        # tmp=False # 테스트용. 본인 일치 시 true, 아닐 시 false
+        # if tmp==True:
+        #     self.startButton.show()
+        #     self.match_true.show()
+        #     self.startButton.clicked.connect(self.gotoStartExam)
+        # else :
+        #     self.warning_msg.show()
+        #     self.match_false.show()
 
     def start(self) :
         self.timer=QTimer()
@@ -68,13 +75,27 @@ class CameraWindow(QMainWindow):
         self.timer.start(1000./self.fps)
 
     def nextFrameSlot(self):
-        _,cam=self.cpt.read()
-        cam=cv2.cvtColor(cam,cv2.COLOR_BGR2RGB)
+        #_,cam=self.cpt.read()
+        frame = self.face_auth.get_frame()
+        cam=cv2.cvtColor(frame,cv2.COLOR_BGR2RGB)
         cam=cv2.flip(cam,1)
         set_img=QImage(cam,cam.shape[1],cam.shape[0],QImage.Format_RGB888)
         pix=QPixmap.fromImage(set_img)
         self.img_frame.setPixmap(pix)
-
+        self.startButton.show()
+        print(self.face_auth.face_names)
+        if len(self.face_auth.face_names) == 1:                                 #Detected 되는 사람이 한명일때
+            if self.face_auth.face_names[0] in self.face_auth.known_face_names:     #입력된 정보 리스트에서  일치하는 사람이 있을 때
+                self.startButton.show()
+                self.match_true.show()
+                self.startButton.clicked.connect(self.gotoStartExam)
+                self.warning_msg.hide()
+                self.match_false.hide()
+        else:
+            self.warning_msg.show()
+            self.match_false.show()
+            self.startButton.hide()
+            self.match_true.hide()
     def gotoStartExam(self) :
         self.timer.stop()
         print(CameraWindow.get_sn)
@@ -93,8 +114,7 @@ class StartExam(QMainWindow):
         self.label_en_set.setText(en)
         self.finishButton.clicked.connect(qApp.exit)
         #여기서 얼굴인식기능 함수랑 화면공유기능 함수 호출하면 됨
-       
-        
+               
 app=QApplication(sys.argv)
 fontDB=QFontDatabase()
 fontDB.addApplicationFont('./NanumSquare.ttf')
