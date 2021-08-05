@@ -116,9 +116,11 @@ class StartExam(QMainWindow):
         self.finishButton.clicked.connect(self.finishExam)
          
         #여기서 얼굴인식기능 함수랑 화면공유기능 함수 호출하면 됨
+        '''
         t = Thread(target=self.getScreen, args=(sn,en,))
         t.start()
-        #self.program_keyboard()
+        self.program_keyboard()
+        '''
 
     def program_keyboard(self):
         #mac
@@ -227,14 +229,15 @@ class StartExam(QMainWindow):
 
             clientSocket.send(student_id.to_bytes(1024, 'big'))
 
-            monitor = {"top": 160, "left": 160, "width": 160, "height": 135}
-            output = "sct-{top}x{left}_{width}x{height}.png".format(**monitor)
             
             while self.__running:
                 # Capture the screen
                 im = sct.grab(rect)
                 #tools.to_png(im.rgb, im.size,output=output) //제대로 캡쳐 하고있음
                 pixels = tools.to_png(im.rgb, im.size)
+                '''
+                monitor = {"top": 160, "left": 160, "width": 160, "height": 135}
+                output = "sct-{top}x{left}_{width}x{height}.png".format(**monitor)'''
 
                 # Send the size of the pixels length
                 size = len(pixels)
