@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 import sys, cv2, numpy, time
 import face_auth as auth
-import program_keyboard as pk
+import threading 
 from threading import Thread
 from PyQt5 import QtWidgets
 from PyQt5.uic import loadUi
@@ -11,6 +11,10 @@ from PyQt5.QtCore import *
 import socket
 from mss import mss, tools
 from sys import platform
+import os,signal
+import keyboard
+from tkinter import messagebox
+from PIL import Image
 
 
 def face_authorization(name):
@@ -54,25 +58,17 @@ class CameraWindow(QMainWindow):
         self.warning_msg.hide()
         self.match_true.hide()
         self.match_false.hide()
+        self.startButton.clicked.connect(self.gotoStartExam)
         CameraWindow.get_sn=sn
         CameraWindow.get_en=en
         self.face_auth = auth.FaceRecog()
         print(self.face_auth.known_face_names)
 
         #카메라 뿌리기
-        self.cpt=cv2.VideoCapture(0)
         self.fps=24
         self.img_frame.setScaledContents(True)
         self.start()
 
-        # tmp=False # 테스트용. 본인 일치 시 true, 아닐 시 false
-        # if tmp==True:
-        #     self.startButton.show()
-        #     self.match_true.show()
-        #     self.startButton.clicked.connect(self.gotoStartExam)
-        # else :
-        #     self.warning_msg.show()
-        #     self.match_false.show()
 
     def start(self) :
         self.timer=QTimer()
@@ -93,7 +89,6 @@ class CameraWindow(QMainWindow):
             if self.face_auth.face_names[0] in self.face_auth.known_face_names:     #입력된 정보 리스트에서  일치하는 사람이 있을 때
                 self.startButton.show()
                 self.match_true.show()
-                self.startButton.clicked.connect(self.gotoStartExam)
                 self.warning_msg.hide()
                 self.match_false.hide()
         else:
@@ -101,6 +96,7 @@ class CameraWindow(QMainWindow):
             self.match_false.show()
             self.startButton.hide()
             self.match_true.hide()
+
     def gotoStartExam(self) :
         self.timer.stop()
         #print(CameraWindow.get_sn)
@@ -108,7 +104,6 @@ class CameraWindow(QMainWindow):
         startexam=StartExam(CameraWindow.get_sn,CameraWindow.get_en)
         widget.addWidget(startexam)
         widget.setCurrentIndex(widget.currentIndex()+1)
-
 
 
 class StartExam(QMainWindow):
@@ -119,41 +114,100 @@ class StartExam(QMainWindow):
         self.label_sn_set.setText(sn)
         self.label_en_set.setText(en)
         self.finishButton.clicked.connect(self.finishExam)
-     
          
         #여기서 얼굴인식기능 함수랑 화면공유기능 함수 호출하면 됨
-        #self.getScreen(sn,en)
+        t = Thread(target=self.getScreen, args=(sn,en,))
+        t.start()
         #self.program_keyboard()
 
     def program_keyboard(self):
         #mac
-        if self.platform=="darwin":
+        plf=sys.platform
+        if plf=="darwin":
             print("this is mac os")
             # 감시할 프로그램 리스트
+            
             name = {"KakaoTalk", "Google", "Notes", "Skype"} 
-    
+            
             # 감시할 프로그램 개수 만큼 thread 생성
             for n in name:
-                t = Thread(target=pk.mac_killer, args=(n,))
+                t = Thread(target=self.mac_killer, args=(n,))
                 t.start()
 
             # 키보드 감시 thread 생성
-            t = Thread(target=pk.mac_keyboard_detector)
+            t = Thread(target=self.mac_keyboard_detector)
             t.start()
+            print('came back-program-keyboard')
 
-        elif self.platform=="win32":
+        elif plf=="win32":
             print("this is win os")
             # 감시할 프로그램 리스트
             name = {"KakaoTalk.exe", "Microsoft.Notes.exe", "chrome.exe", "notepad.exe", "Powerpnt.exe", "Winword.exe"}
 
             # 감시할 프로그램 개수 만큼 thread 생성
             for n in name:
-                t = Thread(target=pk.win_killer, args=(n,))
+                t = Thread(target=self.win_killer, args=(n,))
                 t.start()
 
             # 키보드 감시 thread 생성
-            t = Thread(target=pk.win_keyboard_detector)
+            t = Thread(target=self.win_keyboard_detector)
             t.start()
+    
+
+    def mac_killer(self,n):
+        while self.__running:
+
+            line= os.popen("ps ax | grep " + n + " | grep -v grep")
+            result=line.read()
+            if len(result)>0:
+                fields = result.split()
+
+                # extracting Process ID from the output
+                pid = fields[0]
+                    
+                # terminating process
+                os.kill(int(pid), signal.SIGKILL)
+                time.sleep(1)
+            
+    
+        print('finish killer thread')
+
+    def mac_keyboard_detector(self):
+        while self.__running:
+            if keyboard.is_pressed('cmd+c'):
+                #messagebox.showwarning(title="Warning", message="Press Ctrl Key")
+                print("Press cmd+c Key")
+
+            elif keyboard.is_pressed('cmd+v'):
+                #messagebox.showwarning(title="Warning", message="Press Alt Key")
+                print("Press cmd+v Key")
+            
+            time.sleep(0.1)
+
+
+    def win_killer(self,name):
+        while self.__running :
+            kill = os.system(f"taskkill /f /im {name}")
+
+            if kill == 0 or kill == 1:
+                print(f'{name} Is Running And Is Killed')
+            else:
+                print(f'{name} is Not Running')
+
+    def win_keyboard_detector(self):
+        while self.__running:
+            if keyboard.is_pressed('ctrl'):
+                messagebox.showwarning(title="Warning", message="Press Ctrl Key")
+                print("Press Ctrl Key")
+
+            elif keyboard.is_pressed('alt'):
+                messagebox.showwarning(title="Warning", message="Press Alt Key")
+                print("Press Alt Key")
+
+
+            elif keyboard.is_pressed('win'):
+                messagebox.showwarning(title="Warning", message="Press Window Key")
+                print("Press Window Key")
 
     def getScreen(self,sn,en):
         clientSocket = socket.socket()
@@ -173,11 +227,14 @@ class StartExam(QMainWindow):
 
             clientSocket.send(student_id.to_bytes(1024, 'big'))
 
+            monitor = {"top": 160, "left": 160, "width": 160, "height": 135}
+            output = "sct-{top}x{left}_{width}x{height}.png".format(**monitor)
+            
             while self.__running:
                 # Capture the screen
                 im = sct.grab(rect)
+                #tools.to_png(im.rgb, im.size,output=output) //제대로 캡쳐 하고있음
                 pixels = tools.to_png(im.rgb, im.size)
-                
 
                 # Send the size of the pixels length
                 size = len(pixels)
@@ -190,13 +247,15 @@ class StartExam(QMainWindow):
 
                 # Send pixels
                 clientSocket.sendall(pixels)
-
+            print('finish get screen')
+    
     def finishExam(self):
+        print('came back-finish')
         #감시 쓰레드 종료
         #clientSocket.close()
         self.__running=False
-        qApp.exit(0)
 
+        qApp.exit(0)
                
 app=QApplication(sys.argv)
 fontDB=QFontDatabase()
@@ -211,4 +270,5 @@ widget.addWidget(mainwindow)
 widget.setFixedWidth(360)
 widget.setFixedHeight(480)
 widget.show()
+mainThread=threading.currentThread()
 app.exec_()
