@@ -62,7 +62,7 @@ class CameraWindow(QMainWindow):
         CameraWindow.get_sn=sn
         CameraWindow.get_en=en
         self.face_auth = auth.FaceRecog()
-        print(self.face_auth.known_face_names)
+        #print(self.face_auth.known_face_names)
 
         #카메라 뿌리기
         self.fps=24
@@ -84,7 +84,7 @@ class CameraWindow(QMainWindow):
         pix=QPixmap.fromImage(set_img)
         self.img_frame.setPixmap(pix)
         self.startButton.show()
-        print(self.face_auth.face_names)
+        #print(self.face_auth.face_names)
         if len(self.face_auth.face_names) == 1:                                 #Detected 되는 사람이 한명일때
             if self.face_auth.face_names[0] in self.face_auth.known_face_names:     #입력된 정보 리스트에서  일치하는 사람이 있을 때
                 self.startButton.show()
@@ -99,8 +99,7 @@ class CameraWindow(QMainWindow):
 
     def gotoStartExam(self) :
         self.timer.stop()
-        #print(CameraWindow.get_sn)
-        #print(CameraWindow.get_en)
+        self.face_auth.stop()
         startexam=StartExam(CameraWindow.get_sn,CameraWindow.get_en)
         widget.addWidget(startexam)
         widget.setCurrentIndex(widget.currentIndex()+1)
@@ -116,11 +115,11 @@ class StartExam(QMainWindow):
         self.finishButton.clicked.connect(self.finishExam)
          
         #여기서 얼굴인식기능 함수랑 화면공유기능 함수 호출하면 됨
-        '''
-        t = Thread(target=self.getScreen, args=(sn,en,))
-        t.start()
+        
+        #t = Thread(target=self.getScreen, args=(sn,en,),daemon=True)
+        #t.start()
         self.program_keyboard()
-        '''
+        
 
     def program_keyboard(self):
         #mac
@@ -139,7 +138,6 @@ class StartExam(QMainWindow):
             # 키보드 감시 thread 생성
             t = Thread(target=self.mac_keyboard_detector)
             t.start()
-            print('came back-program-keyboard')
 
         elif plf=="win32":
             print("this is win os")
@@ -229,15 +227,10 @@ class StartExam(QMainWindow):
 
             clientSocket.send(student_id.to_bytes(1024, 'big'))
 
-            
             while self.__running:
                 # Capture the screen
                 im = sct.grab(rect)
-                #tools.to_png(im.rgb, im.size,output=output) //제대로 캡쳐 하고있음
                 pixels = tools.to_png(im.rgb, im.size)
-                '''
-                monitor = {"top": 160, "left": 160, "width": 160, "height": 135}
-                output = "sct-{top}x{left}_{width}x{height}.png".format(**monitor)'''
 
                 # Send the size of the pixels length
                 size = len(pixels)
@@ -250,15 +243,48 @@ class StartExam(QMainWindow):
 
                 # Send pixels
                 clientSocket.sendall(pixels)
-            print('finish get screen')
+                clientSocket.close()
     
     def finishExam(self):
         print('came back-finish')
         #감시 쓰레드 종료
-        #clientSocket.close()
         self.__running=False
-
         qApp.exit(0)
+
+def getScreen(self,sn,en):
+        clientSocket = socket.socket()
+        clientSocket.connect(('172.30.1.30', 8888))
+
+        student_id=int(sn)
+
+        with mss() as sct:
+            mon = sct.monitors[1]
+            rect = {
+                "top": mon["top"],
+                "left": mon["left"],
+                "width": mon["width"],
+                "height": mon["height"],
+                "mon": 1
+            }
+
+            clientSocket.send(student_id.to_bytes(1024, 'big'))
+
+            while self.__running:
+                # Capture the screen
+                im = sct.grab(rect)
+                pixels = tools.to_png(im.rgb, im.size)
+
+                # Send the size of the pixels length
+                size = len(pixels)
+                size_len = (size.bit_length() + 7) // 8
+                clientSocket.send(bytes([size_len]))
+
+                # Send the actual pixels length
+                size_bytes = size.to_bytes(size_len, 'big')
+                clientSocket.send(size_bytes)
+
+                # Send pixels
+                clientSocket.sendall(pixels)
                
 app=QApplication(sys.argv)
 fontDB=QFontDatabase()

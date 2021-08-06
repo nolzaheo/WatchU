@@ -19,20 +19,6 @@ class VideoCamera(object):
         ret, frame = self.video.read()
         return frame
 
+    def stop(self):
+        self.video.release()
 
-if __name__ == '__main__':
-    cam = VideoCamera()
-    while True:
-        frame = cam.get_frame()
-
-        # show the frame
-        cv2.imshow("Frame", frame)
-        key = cv2.waitKey(1) & 0xFF
-
-        # if the `q` key was pressed, break from the loop
-        if key == ord("q"):
-            break
-
-    # do a bit of cleanup
-    cv2.destroyAllWindows()
-    print('finish')
