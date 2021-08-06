@@ -100,6 +100,8 @@ class CameraWindow(QMainWindow):
     def gotoStartExam(self) :
         self.timer.stop()
         self.face_auth.stop()
+        #print(CameraWindow.get_sn)
+        #print(CameraWindow.get_en)
         startexam=StartExam(CameraWindow.get_sn,CameraWindow.get_en)
         widget.addWidget(startexam)
         widget.setCurrentIndex(widget.currentIndex()+1)
@@ -243,12 +245,13 @@ class StartExam(QMainWindow):
 
                 # Send pixels
                 clientSocket.sendall(pixels)
-                clientSocket.close()
     
     def finishExam(self):
         print('came back-finish')
         #감시 쓰레드 종료
+        #clientSocket.close()
         self.__running=False
+
         qApp.exit(0)
 
 def getScreen(self,sn,en):
