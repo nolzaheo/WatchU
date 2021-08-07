@@ -26,26 +26,31 @@ class MainWindow(QMainWindow):
         super(MainWindow,self).__init__()
         loadUi("ui/MainWindow.ui",self)
         #응시하기 버튼 누르면 화면 전환
-        
         self.enterButton.clicked.connect(self.checkAccount)
+        self.loginSuccess=False
         #self.title.setFont(QFont('NanumSquare_0',16))
 
     def checkAccount(self):
         sn=self.lineEdit_sn.text()
         en=self.lineEdit_en.text()
-
+        
+        #------------------DB-----------------------#
         #1.db 상에 존재하는지 확인 2.시험 start_time 확인
         #조건1,2 모두 충족하면 loginSuccess=True
         #그렇지 않으면 loginSuccess=False
-
-        #if self.loginSuccess==True:
-        print("Sucessfully logged in with ",sn,"(test : ",en,")")
-        camerawindow=CameraWindow(sn,en)
-        widget.addWidget(camerawindow)
-        widget.setCurrentIndex(widget.currentIndex()+1)
-        #else:
-        #    print("Login failed! try again.")
-            #mainwindow  재호출
+        
+        if sn=='1' and en=='1':
+            self.loginSuccess=True
+        
+        if self.loginSuccess==True:
+            print("Sucessfully logged in with ",sn,"(test : ",en,")")
+            self.statusBar().showMessage('Success')
+            camerawindow=CameraWindow(sn,en)
+            widget.addWidget(camerawindow)
+            widget.setCurrentIndex(widget.currentIndex()+1)
+        else:
+            self.statusBar().showMessage(' Failed. Try Again.',2000)
+            
 
 class CameraWindow(QMainWindow):
     get_sn=0
@@ -61,8 +66,11 @@ class CameraWindow(QMainWindow):
         self.startButton.clicked.connect(self.gotoStartExam)
         CameraWindow.get_sn=sn
         CameraWindow.get_en=en
+
+        #------------------DB-----------------------#
+        #학번에 해당하는 학생의 사진 가져와서 비교
+
         self.face_auth = auth.FaceRecog()
-        #print(self.face_auth.known_face_names)
 
         #카메라 뿌리기
         self.fps=24
@@ -116,11 +124,17 @@ class StartExam(QMainWindow):
         self.label_en_set.setText(en)
         self.finishButton.clicked.connect(self.finishExam)
          
+        #------------------DB-----------------------#
+        #시험 종료시간에 프로그램 자동 종료 download
+        #감시 프로그램 리스트 download
+        #부정행위(대리시험 및 부재, 부적절한 키보드) 로그 upload
+
+
         #여기서 얼굴인식기능 함수랑 화면공유기능 함수 호출하면 됨
         
         #t = Thread(target=self.getScreen, args=(sn,en,),daemon=True)
         #t.start()
-        self.program_keyboard()
+        #self.program_keyboard()
         
 
     def program_keyboard(self):
