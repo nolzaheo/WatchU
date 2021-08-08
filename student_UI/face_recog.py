@@ -40,7 +40,6 @@ class FaceRecog():
         self.start_time = datetime.now()
         self.end_time = datetime.now()
         
-
     def __del__(self):
         del self.camera        
     def get_frame(self):
@@ -57,8 +56,6 @@ class FaceRecog():
         if self.process_this_frame:
             # Find all the faces and face encodings in the current frame of video
             display = False
-            timer = False
-            #t = Thread(target=FaceRecog.timer)
             
             self.face_locations = face_recognition.face_locations(rgb_small_frame)
             self.face_encodings = face_recognition.face_encodings(rgb_small_frame, self.face_locations)
@@ -70,7 +67,7 @@ class FaceRecog():
 
                 distances = face_recognition.face_distance(self.known_face_encodings, face_encoding)
                 min_value = min(distances)
-                print('사람 얼굴 감지됨')
+                #print('사람 얼굴 감지됨')
                 # tolerance: How much distance between faces to consider it a match. Lower is more strict.
                 # 0.6 is typical best performance.
                 name = "Unknown"
@@ -80,12 +77,14 @@ class FaceRecog():
                 else:                                           #모르는 사람이 감지되었을 때
                     print("모르는 사람 감지")
                     print(time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(time.time())))
+                    #------------------DB-----------------------#
                     display = True
                 # if name == "Unknown":
                 #     print("모르는 사람 감지")
                 self.face_names.append(name)
                 if len(self.face_names) > 1:                                #2명이상 감지 되었을 때
                     print(str(len(self.face_names)) + '명이 감지 되었습니다')
+                    #------------------DB-----------------------#
                     display = True
             
             if len(self.face_names) == 0:   #아무도 감지 안되면
@@ -96,22 +95,15 @@ class FaceRecog():
 
                 if self.absence:
                     self.start_time = datetime.now()
-                    if (self.start_time - self.end_time).seconds > 10:
+                    if (self.start_time - self.end_time).seconds > 10:          #10초 이상 부재 일때
                         print('이새끼 어디감')
+                    #------------------DB-----------------------#
                     else:
                         print (str((self.start_time - self.end_time).seconds) + '초 동안 감지 되지 않음')
-                
-                #self.absence = False
-                # diff = (datetime.now() - start_time).seconds
-                # if diff > 10:
-                #     print('이새끼 어디감')
             else:
                 print(self.face_names)
                 self.absence = False
                 self.timerStart = True
-                
-
-        #self.process_this_frame = not self.process_this_frame
 
         # Display the results
         if display == True:
@@ -123,7 +115,6 @@ class FaceRecog():
                 left *= 4
                 # Draw a box around the face
                 cv2.rectangle(frame, (left, top), (right, bottom), (153, 230, 255), 2)
-
                 # Draw a label with a name below the face
                 cv2.rectangle(frame, (left, bottom - 35), (right, bottom), (153, 230, 255), cv2.FILLED)
                 font = cv2.FONT_HERSHEY_DUPLEX
@@ -148,6 +139,7 @@ if __name__ == '__main__':
     # t = Thread(target=FaceRecog.timer)
     while True:
         frame = face_recog.get_frame()
+        print(type(frame))
         # if face_recog.absence == True:
         #     print('true',face_recog.start_time)
             
