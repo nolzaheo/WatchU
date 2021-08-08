@@ -2,7 +2,6 @@
 import sys, cv2, numpy, time
 import face_auth as auth
 import threading 
-import face_recog as fr
 from threading import Thread
 from PyQt5 import QtWidgets
 from PyQt5.uic import loadUi
@@ -14,27 +13,17 @@ from mss import mss, tools
 from sys import platform
 import os,signal
 import keyboard
-#from tkinter import messagebox
+from tkinter import messagebox
 from PIL import Image
+import requests
+from datetime import datetime
+import io
+import face_recog as fr
+import base64
+
 
 def face_authorization(name):
     return name
-
-def face_recognition():
-    face_recog = fr.FaceRecog()
-    print(face_recog.known_face_names)
-    while True:
-        frame = face_recog.get_frame()
-
-            # show the frame
-        #cv2.imshow("Frame", frame)
-        key = cv2.waitKey(1) & 0xFF
-
-            # if the `q` key was pressed, break from the loop
-        if key == ord("q"):
-            break
-    cv2.destroyAllWindows()
-    print('finish')
 
 class MainWindow(QMainWindow):
 
@@ -51,21 +40,43 @@ class MainWindow(QMainWindow):
         en=self.lineEdit_en.text()
         
         #------------------DB-----------------------#
-        #1.db 상에 존재하는지 확인 2.시험 start_time 확인
-        #조건1,2 모두 충족하면 loginSuccess=True
-        #그렇지 않으면 loginSuccess=False
+        #로그인 성공 여부,이미지, 시험 시작시간, 종료시간, 감시 프로그램 리스트
+        res=requests.post("http://10.23.48.49:5000/test_room/student_login/" + "fZKBi-0Y2bfSrPY" + "/" +"20150103")
+
+        global student_image
+        global start_date
+        global end_date
+        global block_list
+
+        student_image=res.json()["student_image"]
+        start_date=res.json()["start_date"]
+        end_date=res.json()["end_date"]
+        block_list=res.json()["block_list"]
+        print(block_list)
+
+        print('start:',start_date,'end:',end_date)
+
         
-        if sn=='1' and en=='1':
-            self.loginSuccess=True
-        
-        if self.loginSuccess==True:
+        if res.json()["test_room"]=='yes' and res.json()["student"]=='yes':
             print("Sucessfully logged in with ",sn,"(test : ",en,")")
             self.statusBar().showMessage('Success')
+            #knowns 폴더에 저장
+            #  decode
+            imgbyte = base64.b64decode(student_image)
+            img=Image.open(io.BytesIO(imgbyte))
+            save_path=os.path.abspath(os.getcwd())
+            save_path+='/knowns/'+sn+'.jpg'
+            #os.path.join(save_path,'/knowns/'+sn+'.jpg')
+            print(save_path)
+            img.save(save_path,'JPEG')
+
             camerawindow=CameraWindow(sn,en)
             widget.addWidget(camerawindow)
             widget.setCurrentIndex(widget.currentIndex()+1)
         else:
             self.statusBar().showMessage(' Failed. Try Again.',2000)
+            self.lineEdit_sn.clear
+            self.lineEdit_en.clear
             
 
 class CameraWindow(QMainWindow):
@@ -83,8 +94,6 @@ class CameraWindow(QMainWindow):
         CameraWindow.get_sn=sn
         CameraWindow.get_en=en
 
-        #------------------DB-----------------------#
-        #학번에 해당하는 학생의 사진 가져와서 비교
 
         self.face_auth = auth.FaceRecog()
 
@@ -147,12 +156,32 @@ class StartExam(QMainWindow):
 
 
         #여기서 얼굴인식기능 함수랑 화면공유기능 함수 호출하면 됨
-        face_thread = Thread(target=face_recognition)
-        face_thread.start()
-        self.finishExam()
+        
+        self.program_keyboard()
         #t = Thread(target=self.getScreen, args=(sn,en,),daemon=True)
         #t.start()
-        #self.program_keyboard()       
+        print("여기 ",end_date)
+        
+        end_time=end_date.split(' ')[1]
+        end_hour=end_time.split(':')[0]
+        end_min=end_time.split(':')[1]
+        print("종료 :",end_hour+"시 ",end_min+"분")
+        face_thread = Thread(target=self.face_recognition,args=(end_hour,end_min,))
+        face_thread.start()
+
+    def face_recognition(self, end_hour, end_min):
+        face_recog = fr.FaceRecog()
+        print(face_recog.known_face_names)
+        while self.__running:
+            frame = face_recog.get_frame()
+
+            currentHour = datetime.now().hour
+            currentMinute = datetime.now().minute
+            #if currentHour==end_hour and currentMinute==end_min:
+            if currentHour==15 and currentMinute==57:
+                print('나감~~')
+                break
+        self.finishExam()  
 
     def program_keyboard(self):
         #mac
@@ -161,7 +190,9 @@ class StartExam(QMainWindow):
             print("this is mac os")
             # 감시할 프로그램 리스트
             
-            name = {"KakaoTalk", "Google", "Notes", "Skype"} 
+            name = self.process_program_list(plf)
+            print('차단 리스트')
+            print(name)
             
             # 감시할 프로그램 개수 만큼 thread 생성
             for n in name:
@@ -175,7 +206,7 @@ class StartExam(QMainWindow):
         elif plf=="win32":
             print("this is win os")
             # 감시할 프로그램 리스트
-            name = {"KakaoTalk.exe", "Microsoft.Notes.exe", "chrome.exe", "notepad.exe", "Powerpnt.exe", "Winword.exe"}
+            name=self.process_program_list(plf)
 
             # 감시할 프로그램 개수 만큼 thread 생성
             for n in name:
@@ -210,10 +241,12 @@ class StartExam(QMainWindow):
             if keyboard.is_pressed('cmd+c'):
                 #messagebox.showwarning(title="Warning", message="Press Ctrl Key")
                 print("Press cmd+c Key")
+                self.send_keyboard_log('cmd+c')
 
             elif keyboard.is_pressed('cmd+v'):
                 #messagebox.showwarning(title="Warning", message="Press Alt Key")
                 print("Press cmd+v Key")
+                self.send_keyboard_log('cmd+v')
             
             time.sleep(0.1)
 
@@ -244,7 +277,7 @@ class StartExam(QMainWindow):
 
     def getScreen(self,sn,en):
         clientSocket = socket.socket()
-        clientSocket.connect(('172.30.1.30', 8888))
+        clientSocket.connect(('172.30.1.53', 8888))
 
         student_id=int(sn)
 
@@ -276,6 +309,20 @@ class StartExam(QMainWindow):
 
                 # Send pixels
                 clientSocket.sendall(pixels)
+
+    def process_program_list(self,plf):
+        tmp=block_list.split(';').pop()
+
+        list_arr=[]
+        if plf=="darwin":
+            return tmp
+        elif plf=="win32":
+            if "KakaoTalk" in tmp:
+                list_arr.append("KakaoTalk.exe")
+            if "Google" in tmp:
+                list_arr.append("chrome.exe")
+            return list_arr
+
     
     def finishExam(self):
         print('came back-finish')
@@ -285,9 +332,17 @@ class StartExam(QMainWindow):
 
         qApp.exit(0)
 
-def getScreen(self,sn,en):
+    def send_keyboard_log(self,key):
+        data = dict()
+        data["type"]="부적절한 키보드 입력("+key+")감지됨"
+        data["date"]=datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+        data["image"]="None"
+        res=requests.post("http://172.30.1.2:5000/test_room/log/" + "fZKBi-0Y2bfSrPY" + "/" +"20170327",data=data)
+        print('sent')
+
+def getScreen(sn,en):
         clientSocket = socket.socket()
-        clientSocket.connect(('172.30.1.30', 8888))
+        clientSocket.connect(('172.30.1.53', 8888))
 
         student_id=int(sn)
 
@@ -303,7 +358,7 @@ def getScreen(self,sn,en):
 
             clientSocket.send(student_id.to_bytes(1024, 'big'))
 
-            while self.__running:
+            while True:
                 # Capture the screen
                 im = sct.grab(rect)
                 pixels = tools.to_png(im.rgb, im.size)
@@ -319,7 +374,10 @@ def getScreen(self,sn,en):
 
                 # Send pixels
                 clientSocket.sendall(pixels)
-               
+
+
+
+
 app=QApplication(sys.argv)
 fontDB=QFontDatabase()
 fontDB.addApplicationFont('./font/NanumSquare.ttf')
