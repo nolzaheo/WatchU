@@ -6,7 +6,8 @@ import os
 import numpy as np
 import time
 from datetime import datetime
-from threading import Thread
+import base64
+import requests
 
 class FaceRecog():
     def __init__(self):
@@ -56,6 +57,8 @@ class FaceRecog():
         if self.process_this_frame:
             # Find all the faces and face encodings in the current frame of video
             display = False
+            multi = False
+            log = ""
             
             self.face_locations = face_recognition.face_locations(rgb_small_frame)
             self.face_encodings = face_recognition.face_encodings(rgb_small_frame, self.face_locations)
@@ -77,15 +80,20 @@ class FaceRecog():
                 else:                                           #모르는 사람이 감지되었을 때
                     print("모르는 사람 감지")
                     print(time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(time.time())))
+                    log = "모르는 사람 감지"
                     #------------------DB-----------------------#
                     display = True
+                    multi = True
+
                 # if name == "Unknown":
                 #     print("모르는 사람 감지")
                 self.face_names.append(name)
                 if len(self.face_names) > 1:                                #2명이상 감지 되었을 때
                     print(str(len(self.face_names)) + '명이 감지 되었습니다')
+                    log = str(len(self.face_names)) + '명이 감지 되었습니다'
                     #------------------DB-----------------------#
                     display = True
+                    multi = True
             
             if len(self.face_names) == 0:   #아무도 감지 안되면
                 self.absence = True
@@ -95,8 +103,10 @@ class FaceRecog():
 
                 if self.absence:
                     self.start_time = datetime.now()
-                    if (self.start_time - self.end_time).seconds > 10:          #10초 이상 부재 일때
+                    if (self.start_time - self.end_time).seconds > 5:          #10초 이상 부재 일때
                         print('이새끼 어디감')
+                        log = str((self.start_time - self.end_time).seconds) + '초 동안 감지 되지 않음'
+                        display = True
                     #------------------DB-----------------------#
                     else:
                         print (str((self.start_time - self.end_time).seconds) + '초 동안 감지 되지 않음')
@@ -120,8 +130,23 @@ class FaceRecog():
                 font = cv2.FONT_HERSHEY_DUPLEX
                 cv2.putText(frame, name, (left + 6, bottom - 6), font, 1.0, (0, 0, 0), 2)
                 #cv2.imshow("Frame", frame)
+            
+            ret, jpg = cv2.imencode('.jpg', frame)
+            frame_byte = jpg.tobytes()
+            #print(frame_byte)
+            if datetime.now().second % 5 == 0 or multi == True:
+                data = dict()
+                data["type"] = log
+                data["date"] = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+                data["image"]= base64.b64encode(frame_byte).decode()
+                #res = requests.post("http://172.30.1.2:5000/test_room/log/" + "fZKBi-0Y2bfSrPY" + "/" +"20170327",data=data)
+                print('sent')
+                multi = False
+                time.sleep(1)
+                
+            #여기서 쇼부 봐야함 여기서 request
             display = False
-
+              
         return frame
 
     def get_jpg_bytes(self):
@@ -139,7 +164,7 @@ if __name__ == '__main__':
     # t = Thread(target=FaceRecog.timer)
     while True:
         frame = face_recog.get_frame()
-        print(type(frame))
+        #print(type(frame))
         # if face_recog.absence == True:
         #     print('true',face_recog.start_time)
             
@@ -151,7 +176,7 @@ if __name__ == '__main__':
         #     except:
         #         print('except')
         # show the frame
-        #cv2.imshow("Frame", frame)
+        cv2.imshow("Frame", frame)
         key = cv2.waitKey(1) & 0xFF
 
         # if the `q` key was pressed, break from the loop
