@@ -146,7 +146,7 @@ class StartExam(QMainWindow):
         #t = Thread(target=self.getScreen, args=(sn,en,),daemon=True)
         #t.start()
         
-        end_hour=18
+        end_hour=19
         end_min=0
         face_thread = Thread(target=self.face_recognition,args=(end_hour,end_min,known_face_names,known_face_encodings))
         face_thread.start()
@@ -162,7 +162,6 @@ class StartExam(QMainWindow):
             if currentHour>end_hour or (currentHour==end_hour and currentMinute>=end_min):
                 print('나감~~')
                 break
-            
         face_recog.stop()
         self.finishExam()  
 
