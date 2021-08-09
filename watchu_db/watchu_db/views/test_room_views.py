@@ -4,16 +4,12 @@ from datetime import datetime
 
 from PIL import Image
 from flask import Blueprint, render_template, request, g, url_for, Response, stream_with_context, session, jsonify
-from flask_socketio import emit, join_room
 from werkzeug.utils import redirect
 import secrets
 
 from watchu_db.models import Professor, TestRoom, Student, Log
 from watchu_db import db
 from watchu_db.views import auth_views
-from watchu_db.__init__ import global_images
-
-# from watchu_db import socketio
 
 bp = Blueprint('test_room', __name__, url_prefix='/test_room')
 
@@ -156,10 +152,18 @@ def watching_list():
     return render_template('test_room/watching_list.html', test_room_list=test_room_list)
 
 
-""" watching.html """
-# no_screen_image = open('./static/no_screen.png', 'rb').read()
-# images = dict()
-# student_cnt = 0
+no_screen_image = open('./static/no_screen.png', 'rb').read()
+global_images = dict()  # 전체 화면 공유 이미지 저장 딕셔너리
+
+
+@bp.route('share_screen/<string:test_room_id>/<int:student_id>', methods=['POST'])
+def share_screen(test_room_id, student_id):
+    """ HTTP로 화면 받기 """
+    image = base64.b64decode(request.form["image"])
+    global_images[test_room_id][student_id] = image
+    img = Image.open(io.BytesIO(image))
+    img.save("MyTest1.png")
+    return "done!!"
 
 
 def gen_frames(test_room_id, student_id):
@@ -167,10 +171,10 @@ def gen_frames(test_room_id, student_id):
         image = global_images[test_room_id][student_id]
         print(student_id, global_images[test_room_id][student_id][:100])
         frame = bytearray(image)
-        img = Image.open(io.BytesIO(global_images[test_room_id][student_id]))
+        img = Image.open(io.BytesIO(image))
         img.save("MyTest2.png")
         yield (b'--frame\r\n'
-               b'Content-Type: image/png\r\n\r\n' + global_images[test_room_id][student_id] + b'\r\n')
+               b'Content-Type: image/png\r\n\r\n' + frame + b'\r\n')
 
 
 @bp.route('/screen_socket_feed/<string:test_room_id>/<int:student_id>')
@@ -184,15 +188,12 @@ def watching(test_room_id):
     """ 시험 중 화면 공유 """
     test_room = TestRoom.query.get(test_room_id)
     student_list = []
-    # images = dict()
+    images = dict()
     for s in test_room.student_set:
         student_list.append(s.id)
-        # images[s.id] = no_screen_image
-        # images[s.id] = s.image # 임시로 학생 사진 넣기
-    # global_images[test_room_id] = images
+        images[s.id] = no_screen_image
+    global_images[test_room_id] = images
     print(test_room_id, student_list)
-
-    # 화면 딕셔너리 초기화
     return render_template('test_room/watching.html', test_room_id=test_room_id, student_list=student_list)
 
 
@@ -210,8 +211,6 @@ def watching_log_ajax(test_room_id):
         watching_log_buffer.clear()
         return jsonify(json_list)
     else:
-        # json_list.append({"student_id": "20190327"})
-        # json_list.append({"student_id": "20150113"})
         return jsonify(json_list)
 
 
@@ -302,14 +301,4 @@ def watching_detail_log_ajax(test_room_id, student_id):
         watching_detail_log_buffer.clear()
         return jsonify(json_list)
     else:
-        # json_list.append({
-        #     "type": "1",
-        #     "date": "1",
-        #     "image": "None",
-        # })
-        # json_list.append({
-        #     "type": "2",
-        #     "date": "2",
-        #     "image": "None",
-        # })
         return jsonify(json_list)
