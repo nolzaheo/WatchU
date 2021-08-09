@@ -12,9 +12,73 @@
     {% endfor %}
 </center>
 
+<div id="div_SocketIO"></div>
+
 <button class="btn btn-primary btn-lg" id="changeColor" style="position: fixed; bottom: 5%; right: 2%;">색상 변경</button>
 
+<!-- <script type="text/javascript" src="//cdnjs.cloudflare.com/ajax/libs/socket.io/1.3.6/socket.io.min.js"></script> -->
 <script>
+    let timeoutHnd = null;
+    let timeInterval = 2 * 1000;
+
+    function log_ajax() {
+        $.ajax({
+            url: '{{ url_for("test_room.watching_log_ajax", test_room_id=test_room_id) }}', 
+            type: 'POST', 
+            dataType: 'JSON', 
+            success: (json_list) => {
+                // console.log(json_list);
+                // console.log(json_list[0]["length"]);
+                if(json_list[0]["length"] == "0") {
+                    console.log("Empty");
+                }
+                else {
+                    for(let i = 1; i < json_list.length; i++) {
+                        console.log(i, json_list[i]["student_id"]);
+                        // 빨간색으로 색상 변경
+                        $('#' + json_list[i]["student_id"]).css('background-color', 'red');
+                
+                        // 1초 후 색상 복원
+                        setTimeout(() => {
+                            $('#' + json_list[i]["student_id"]).css('background-color', '#ffe699');
+                        }, 1000); 
+                    }
+                }
+            }, 
+            error: () => {
+                console("Log ajax error!!");
+            }
+        });
+
+        resetTimer();
+    }
+
+    function resetTimer() {
+        clearTimeout(timeoutHnd);
+        timeoutHnd = setTimeout('log_ajax();', timeInterval);
+    }
+
+    $(document).ready(() => {
+        timeoutHnd = setTimeout('log_ajax();', timeInterval); 
+        // const socket = io.connect("http://" + document.domain + ":" + location.port + "/watching");
+        // socket.on('connect', () => {
+        //     console.log("connect");
+        //     socket.emit('my event', {});
+        //     console.log("connect2");
+        // });
+        // socket.on('status', function(data) {
+        //     console.log("status" + data.msg);
+        //     // $('#div_SocketIO').append('<p>' + data.msg + '</p>');
+        //     // $('#chat').val($('#chat').val() + '<' + data.msg + '>\n');
+        //     // $('#chat').scrollTop($('#chat')[0].scrollHeight);
+        // });
+        // socket.on('my response', (msg) => {
+        //     console.log("my response")
+        //     console.log(msg.data);
+        //     // $('#div_SocketIO').append('<p>' + msg.data + '</p>');
+        // });
+    });
+
     /* 색상 변경 테스트 */
     $('#changeColor').click(() => {
         // 클릭 시 빨간색으로 색상 변경

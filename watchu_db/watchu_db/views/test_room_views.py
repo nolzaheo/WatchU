@@ -1,16 +1,19 @@
 import base64
+import io
 from datetime import datetime
-from tempfile import TemporaryFile
 
-from flask import Blueprint, render_template, request, jsonify, g, url_for, Response
-from werkzeug.datastructures import FileStorage
+from PIL import Image
+from flask import Blueprint, render_template, request, g, url_for, Response, stream_with_context, session, jsonify
+from flask_socketio import emit, join_room
 from werkzeug.utils import redirect
+import secrets
 
 from watchu_db.models import Professor, TestRoom, Student, Log
 from watchu_db import db
-import secrets
-
 from watchu_db.views import auth_views
+from watchu_db.__init__ import global_images
+
+# from watchu_db import socketio
 
 bp = Blueprint('test_room', __name__, url_prefix='/test_room')
 
@@ -153,21 +156,26 @@ def watching_list():
     return render_template('test_room/watching_list.html', test_room_list=test_room_list)
 
 
-image = open('./static/no_screen.png', 'rb').read()
-images = dict()
+""" watching.html """
+# no_screen_image = open('./static/no_screen.png', 'rb').read()
+# images = dict()
+# student_cnt = 0
 
 
-def gen_frames(student_id):
+def gen_frames(test_room_id, student_id):
     while True:
-        # image = images[student_id]
+        image = global_images[test_room_id][student_id]
+        print(student_id, global_images[test_room_id][student_id][:100])
         frame = bytearray(image)
+        img = Image.open(io.BytesIO(global_images[test_room_id][student_id]))
+        img.save("MyTest2.png")
         yield (b'--frame\r\n'
-               b'Content-Type: image/png\r\n\r\n' + frame + b'\r\n')
+               b'Content-Type: image/png\r\n\r\n' + global_images[test_room_id][student_id] + b'\r\n')
 
 
-@bp.route('/<string:test_room_id>/<int:student_id>/screen_socket_feed')
+@bp.route('/screen_socket_feed/<string:test_room_id>/<int:student_id>')
 def screen_socket_feed(test_room_id, student_id):
-    return Response(gen_frames(student_id), mimetype='multipart/x-mixed-replace; boundary=frame')
+    return Response(gen_frames(test_room_id, student_id), mimetype='multipart/x-mixed-replace; boundary=frame')
 
 
 @bp.route('/watching/<string:test_room_id>', methods=["GET"])
@@ -176,13 +184,132 @@ def watching(test_room_id):
     """ 시험 중 화면 공유 """
     test_room = TestRoom.query.get(test_room_id)
     student_list = []
+    # images = dict()
     for s in test_room.student_set:
         student_list.append(s.id)
+        # images[s.id] = no_screen_image
         # images[s.id] = s.image # 임시로 학생 사진 넣기
+    # global_images[test_room_id] = images
     print(test_room_id, student_list)
+
+    # 화면 딕셔너리 초기화
     return render_template('test_room/watching.html', test_room_id=test_room_id, student_list=student_list)
+
+
+watching_log_buffer = set()  # 부정행위가 감지 된 학생 번호
+
+
+@bp.route('watching/log_ajax/<string:test_room_id>', methods=['POST'])
+def watching_log_ajax(test_room_id):
+    """ 시험 중 부정행위 알림 """
+    json_list = []
+    json_list.append({"length": len(watching_log_buffer)})
+    if len(watching_log_buffer) != 0:
+        for student_id in watching_log_buffer:
+            json_list.append({"student_id": student_id})
+        watching_log_buffer.clear()
+        return jsonify(json_list)
+    else:
+        # json_list.append({"student_id": "20190327"})
+        # json_list.append({"student_id": "20150113"})
+        return jsonify(json_list)
+
+
+@bp.route('/student_login/<string:test_room_id>/<int:student_id>', methods=['POST'])
+def student_login(test_room_id, student_id):
+    """ 학생 로그인 (학생 이미지, 시험 시작, 종료, 차단 프로그램 전송) """
+    print(test_room_id, student_id)
+    json = dict()
+    test_room = TestRoom.query.get(test_room_id)
+    if test_room is not None:
+        json["test_room"] = "yes"
+        student = Student.query.filter(Student.id == student_id, Student.test_room_id == test_room_id).first()
+        if student is not None:
+            json["student"] = "yes"
+            # 학생 이미지 전송
+            json["student_image"] = base64.b64encode(student.image).decode()
+            # 시험 시작, 종료 전송
+            json["start_date"] = str(test_room.start_date)
+            json["end_date"] = str(test_room.end_date)
+            # 차단 프로그램 리스트 전송
+            json["block_list"] = test_room.block_list
+        else:
+            json["student"] = "no"
+    else:
+        json["test_room"] = "no"
+    print(json)
+    return jsonify(json)
+
+
+@bp.route('/log/<string:test_room_id>/<int:student_id>', methods=['POST'])
+def log(test_room_id, student_id):
+    """ 로그 받기 """
+    print(test_room_id, student_id)
+    print(request.form["type"])
+    type = request.form["type"]
+    date = datetime.strptime(request.form["date"], '%Y-%m-%d %H:%M:%S')
+    image = request.form["image"]
+    watching_log_buffer.add(student_id)  # 부정행위 감지 학생 저장
+    watching_detail_log_buffer.append({  # 부정행위 감지 내용 저장
+        "type": type,
+        "date": date,
+        "image": image
+    })
+    log = None
+    # 키보드 입력 부정행위 로그
+    if image == "None":
+        log = Log(student=Student.query.filter(Student.id == student_id, Student.test_room_id == test_room_id).first(),
+                  type=type, date=date)
+    # 본인확인 부정행위 로그
+    else:
+        image = base64.b64decode(image)  # 받은 이미지 base64 디코딩
+        log = Log(student=Student.query.filter(Student.id == student_id, Student.test_room_id == test_room_id).first(),
+                  type=type, date=date, image=image)
+    db.session.add(log)
+    db.session.commit()
+    return jsonify("로그 잘 받아짐!!")
+
+
+watching_detail_log_buffer = list()  # 부정행위 로그 내용 저장
 
 
 @bp.route('/watching_detail/<string:test_room_id>/<int:student_id>')
 def watching_detail(test_room_id, student_id):
-    return render_template('test_room/watching_detail.html', test_room_id=test_room_id, student_id=student_id)
+    """ 시험 중 학생 디테일 (한명 화면 공유, 로그 띄우기) """
+    watching_detail_log_buffer.clear()
+    log_list = []
+    student = Student.query.filter(Student.id == student_id, Student.test_room_id == test_room_id).first()
+    for log in student.log_set:
+        log_data = dict()
+        log_data["type"] = log.type
+        log_data["date"] = log.date
+        if log.image is None:
+            log_data["image"] = "None"
+        else:
+            log_data["image"] = base64.b64encode(log.image).decode()
+        log_list.append(log_data)
+    return render_template('test_room/watching_detail.html', test_room_id=test_room_id, student_id=student_id,
+                           log_list=log_list)
+
+
+@bp.route('watching_detail/log_ajax/<string:test_room_id>/<int:student_id>', methods=['POST'])
+def watching_detail_log_ajax(test_room_id, student_id):
+    """ 시험 디테일에서 학생의 부정행위 로그 업데이트 """
+    json_list = [{"length": len(watching_detail_log_buffer)}]
+    if len(watching_detail_log_buffer) != 0:
+        for log_data in watching_detail_log_buffer:
+            json_list.append(log_data)
+        watching_detail_log_buffer.clear()
+        return jsonify(json_list)
+    else:
+        # json_list.append({
+        #     "type": "1",
+        #     "date": "1",
+        #     "image": "None",
+        # })
+        # json_list.append({
+        #     "type": "2",
+        #     "date": "2",
+        #     "image": "None",
+        # })
+        return jsonify(json_list)
