@@ -9,7 +9,77 @@
 </div>
 
 <div class="container m-5 float-left" style="width: 40%;">
-    <h3 class="border-bottom py-2">부정행위 로그</h3>
+    <h3 class="border-bottom py-2">부정행위 로그 리스트</h3>
+    <div id="log_list"></div>
 </div>
+
+<script>
+    // 로그 리스트에 추가
+    function addLog(type, date, image) {
+        html = '';
+        html += '<div class="card mt-1 mb-1" style="width: 100%;">';
+        html += '<div class="row no-gutters">';
+        html += '<div class="card-body">';
+        html += '<span class="card-text" style="white-space: pre-line;">' + type + '</span>';
+        html += '<span class="card-text" style="white-space: pre-line;"><br>' + date + '</span>';
+        if(image === 'data:image/jpeg;base64,' + 'None' || image === 'None') {}
+        else {
+            html += '<img class="float-right" src="' + image + '" style="max-width:200px; max-height: auto;">';
+        }
+        html += '</div></div></div>';
+        $('#log_list').append(html);
+    }
+
+    let timeoutHnd = null;
+    let timeInterval = 5 * 1000;
+
+    function log_ajax() {
+        $.ajax({
+            url: '{{ url_for("test_room.watching_detail_log_ajax", test_room_id=test_room_id, student_id=student_id) }}', 
+            type: 'POST', 
+            dataType: 'JSON', 
+            success: (json_list) => {
+                if(json_list[0]["length"] == "0") {
+                    console.log("Empty");
+                }
+                else {
+                    for(let i = 1; i < json_list.length; i++) {
+                        console.log(json_list[i]["type"], json_list[i]["date"], json_list[i]["image"]);
+                        addLog(json_list[i]["type"], json_list[i]["date"], 'data:image/jpeg;base64,' + json_list[i]["image"]);
+                    }
+                }   
+            }, 
+            error: () => {
+                console("Log ajax error!!");
+            }
+        });
+
+        resetTimer();
+    }
+
+    function resetTimer() {
+        clearTimeout(timeoutHnd);
+        timeoutHnd = setTimeout('log_ajax();', timeInterval);
+    }
+
+    // 로그 데이터 로딩
+    $(document).ready(() => {
+        '{% for log in log_list %}';
+            type = '{{ log["type"] }}';
+            date = '{{ log["date"] }}';
+            image = "";
+            if ('{{ log["image"] }}' === "None") {
+                image = "None"
+            }
+            else {
+                image = "data:image/jpeg;base64," + '{{ log["image"] }}';
+            }
+            // console.log(type, date, image);
+            addLog(type, date, image);
+        '{% endfor %}'
+
+        timeoutHnd = setTimeout('log_ajax();', timeInterval); 
+    });
+</script>
 
 {% endblock %}
