@@ -272,12 +272,13 @@ class StartExam(QMainWindow):
         qApp.exit(0)
     
 
-    def send_keyboard_log(self,key):
+    def send_keyboard_log(self,sn,en,key):
         data = dict()
         data["type"]="부적절한 키보드 입력("+key+")감지됨"
         data["date"]=str(datetime.now().strftime('%Y-%m-%d %H:%M:%S'))
         data["image"]="None"
-        res=requests.post("http://172.30.1.2:5000/test_room/log/" + "fZKBi-0Y2bfSrPY" + "/" +"20150113",data=data)
+        res=requests.post("http://172.30.1.2:5000/test_room/log/" + sn + "/" +en,data=data)
+        self.log_list.append(data["type"]+'\n'+data["date"]+'\n')
         print('sent')
 
 class FaceRecognition(QThread):
@@ -294,7 +295,7 @@ class FaceRecognition(QThread):
         
     
     def run(self):
-        face_recog = fr.FaceRecog(self.parent.known_face_names,self.parent.known_face_encodings,self.sn,self.en)
+        face_recog = fr.FaceRecog(self.parent,self.sn,self.en)
         while self.__running:
             face_recog.get_frame()
 
@@ -327,11 +328,11 @@ class MacKeyboardDetector(QThread):
         while self.__running:
             if keyboard.is_pressed('cmd+c'):
                 print("Press cmd+c Key")
-                self.send_keyboard_log('cmd+c')
+                self.send_keyboard_log(self.parent.sn,self.parent.en,'cmd+c')
 
             elif keyboard.is_pressed('cmd+v'):
                 print("Press cmd+v Key")
-                self.send_keyboard_log('cmd+v')
+                self.send_keyboard_log(self.parent.sn,self.parent.en,'cmd+v')
             
             time.sleep(0.2)
 
@@ -350,17 +351,16 @@ class WinKeyboardDetector(QThread):
     def run(self):
         while self.__running:
             if keyboard.is_pressed('ctrl'):
-                messagebox.showwarning(title="Warning", message="Press Ctrl Key")
                 print("Press Ctrl Key")
+                self.send_keyboard_log(self.parent.sn,self.parent.en,'Ctrl')
 
             elif keyboard.is_pressed('alt'):
-                messagebox.showwarning(title="Warning", message="Press Alt Key")
                 print("Press Alt Key")
-
+                self.send_keyboard_log(self.parent.sn,self.parent.en,'alt')
 
             elif keyboard.is_pressed('win'):
-                messagebox.showwarning(title="Warning", message="Press Window Key")
                 print("Press Window Key")
+                self.send_keyboard_log(self.parent.sn,self.parent.en,'win')
 
     @pyqtSlot()
     def signal_emitted(self):
