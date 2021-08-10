@@ -11,7 +11,7 @@ import base64
 import requests
 
 class FaceRecog():
-    def __init__(self,known_face_names,known_face_encodings,sn,en):
+    def __init__(self,grand,sn,en):
         # Using OpenCV to capture from device 0. If you have trouble capturing
         # from a webcam, comment the line below out and use a video file
         # instead.
@@ -19,7 +19,7 @@ class FaceRecog():
 
         print('카메라 켜짐')
         time.sleep(1)
-        print(known_face_names)
+        print(grand.known_face_names)
         #face_auth에서 값을 받아옴. 잘 받아왔는지, 이걸로 충분한지 확인 필요
 
         # Initialize some variables
@@ -28,8 +28,8 @@ class FaceRecog():
         self.absence = False
         self.start_time = ""
         self.end_time = ""
-        self.known_face_names=known_face_names
-        self.known_face_encodings=known_face_encodings
+        self.known_face_names=grand.known_face_names
+        self.known_face_encodings=grand.known_face_encodings
         self.sn=sn
         self.en=en
 
@@ -104,8 +104,10 @@ class FaceRecog():
         data["date"] = str(datetime.now().strftime('%Y-%m-%d %H:%M:%S'))
         data["image"]= base64.b64encode(frame_byte).decode()
         print('7')
+        print('시험번호:',self.en,'학번:',self.sn)
         res = requests.post("http://172.30.1.2:5000/test_room/log/" + self.en + "/" +self.sn,data=data)
         print('sent log:',log)
+        self.grand.log_list.append(log+'\n'+data["date"]+'\n')
         time.sleep(1)
         print('8')
 
