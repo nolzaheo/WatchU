@@ -39,7 +39,7 @@ class MainWindow(QMainWindow):
         #------------------DB-----------------------#
         #로그인 성공 여부,이미지, 시험 시작시간, 종료시간, 감시 프로그램 리스트
 
-        res=requests.post("http://172.30.1.2:5000/test_room/student_login/" + en + "/" +sn)
+        res=requests.post("http://172.30.1.39:5000/test_room/student_login/" + en + "/" +sn)
         print('1')
         global student_image
         global start_date
@@ -147,6 +147,8 @@ class StartExam(QMainWindow):
         self.finishButton.clicked.connect(self.finishExam)
         self.known_face_names=known_face_names
         self.known_face_encodings=known_face_encodings
+        self.sn=sn
+        self.en=en
 
         self.end_time=end_date.split(' ')[1]
         self.end_hour=self.end_time.split(':')[0]
@@ -159,8 +161,8 @@ class StartExam(QMainWindow):
         #-----------------------------------------------------#
         
         self.program_keyboard()
-        self.worker_screen=GetScreen(sn,en,self)
-        self.worker_screen.start()
+        #self.worker_screen=GetScreen(sn,en,self)
+        #self.worker_screen.start()
         
 
 
@@ -267,17 +269,17 @@ class StartExam(QMainWindow):
         for i in range(self.program_cnt):
             self.worker_program[i].wait(5000)
         #화면 공유 기능
-        self.worker_screen.wait(5000)
+        #self.worker_screen.wait(5000)
 
         qApp.exit(0)
     
 
     def send_keyboard_log(self,sn,en,key):
         data = dict()
-        data["type"]="부적절한 키보드 입력("+key+")감지됨"
+        data["type"]="부적절한 키보드 입력("+str(key)+")감지됨"
         data["date"]=str(datetime.now().strftime('%Y-%m-%d %H:%M:%S'))
         data["image"]="None"
-        res=requests.post("http://172.30.1.2:5000/test_room/log/" + sn + "/" +en,data=data)
+        res=requests.post("http://172.30.1.39:5000/test_room/log/" + en + "/" +sn,data=data)
         self.log_list.append(data["type"]+'\n'+data["date"]+'\n')
         print('sent')
 
@@ -301,7 +303,7 @@ class FaceRecognition(QThread):
 
             currentHour = datetime.now().hour
             currentMinute = datetime.now().minute
-            if currentHour>self.end_hour or (currentHour==self.end_hour and currentMinute>=self.end_min):
+            if currentHour>int(self.end_hour) or (currentHour==self.end_hour and currentMinute>=int(self.end_min)):
                 print('나감~~')
                 self.timeout=True
                 break
@@ -328,11 +330,11 @@ class MacKeyboardDetector(QThread):
         while self.__running:
             if keyboard.is_pressed('cmd+c'):
                 print("Press cmd+c Key")
-                self.send_keyboard_log(self.parent.sn,self.parent.en,'cmd+c')
+                self.parent.send_keyboard_log(self.parent.sn,self.parent.en,'cmd+c')
 
             elif keyboard.is_pressed('cmd+v'):
                 print("Press cmd+v Key")
-                self.send_keyboard_log(self.parent.sn,self.parent.en,'cmd+v')
+                self.parent.send_keyboard_log(self.parent.sn,self.parent.en,'cmd+v')
             
             time.sleep(0.2)
 
@@ -352,15 +354,15 @@ class WinKeyboardDetector(QThread):
         while self.__running:
             if keyboard.is_pressed('ctrl'):
                 print("Press Ctrl Key")
-                self.send_keyboard_log(self.parent.sn,self.parent.en,'Ctrl')
+                self.parent.send_keyboard_log(self.parent.sn,self.parent.en,'Ctrl')
 
             elif keyboard.is_pressed('alt'):
                 print("Press Alt Key")
-                self.send_keyboard_log(self.parent.sn,self.parent.en,'alt')
+                self.parent.send_keyboard_log(self.parent.sn,self.parent.en,'alt')
 
             elif keyboard.is_pressed('win'):
                 print("Press Window Key")
-                self.send_keyboard_log(self.parent.sn,self.parent.en,'win')
+                self.parent.send_keyboard_log(self.parent.sn,self.parent.en,'win')
 
     @pyqtSlot()
     def signal_emitted(self):
@@ -377,7 +379,7 @@ class MacKiller(QThread):
 
     def run(self):
         while self.__running:
-            time.sleep(2)
+            time.sleep(5)
             line= os.popen("ps ax | grep " + self.n + " | grep -v grep")
             result=line.read()
             
