@@ -213,13 +213,32 @@ class StartExam(QMainWindow):
 
         list_arr=[]
         if plf=="darwin":
-            return tmp
+            if "카카오톡" in tmp:
+                list_arr.append("KakaoTalk")
+            if "크롬" in tmp:
+                list_arr.append("Google")
+            if "파이어폭스" in tmp:
+                list_arr.append("Firefox")
+            if "사파리" in tmp:
+                list_arr.append("Safari")
+            if "메모장" in tmp:
+                list_arr.append("Notes")
+            if "계산기" in tmp:
+                list_arr.append("Calculator")
         elif plf=="win32":
-            if "KakaoTalk" in tmp:
+            if "카카오톡" in tmp:
                 list_arr.append("KakaoTalk.exe")
-            if "Google" in tmp:
+            if "크롬" in tmp:
                 list_arr.append("chrome.exe")
-            return list_arr
+            if "마이크로소프트 엣지" in tmp:
+                list_arr.append("msedge.exe")
+            if "파이어폭스" in tmp:
+                list_arr.append("firefox.exe")
+            if "메모장" in tmp:
+                list_arr.append("notepad.exe")
+            if "계산기" in tmp:
+                list_arr.append("calc.exe")
+        return list_arr
     
     def finishExam(self):
         print('came back-finish')
