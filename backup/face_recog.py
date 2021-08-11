@@ -32,6 +32,7 @@ class FaceRecog():
         self.known_face_encodings=grand.known_face_encodings
         self.sn=sn
         self.en=en
+        self.grand=grand
 
     def get_frame(self):
         # Grab a single frame of video
@@ -105,7 +106,7 @@ class FaceRecog():
         data["image"]= base64.b64encode(frame_byte).decode()
         print('7')
         print('시험번호:',self.en,'학번:',self.sn)
-        res = requests.post("http://172.30.1.2:5000/test_room/log/" + self.en + "/" +self.sn,data=data)
+        res = requests.post("http://172.30.1.39:5000/test_room/log/" + self.en + "/" +self.sn,data=data)
         print('sent log:',log)
         self.grand.log_list.append(log+'\n'+data["date"]+'\n')
         time.sleep(1)
