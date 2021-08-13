@@ -21,6 +21,7 @@ import io
 import face_recog as fr
 import base64
 
+server='172.30.1.39:5000'
 
 class MainWindow(QMainWindow):
 
@@ -39,7 +40,7 @@ class MainWindow(QMainWindow):
         #------------------DB-----------------------#
         #로그인 성공 여부,이미지, 시험 시작시간, 종료시간, 감시 프로그램 리스트
 
-        res=requests.post("http://172.30.1.39:5000/test_room/student_login/" + en + "/" +sn)
+        res=requests.post("http://"+server+"/test_room/student_login/" + en + "/" +sn)
         print('1')
         global student_image
         global start_date
@@ -141,9 +142,10 @@ class StartExam(QMainWindow):
     def __init__(self, sn, en,known_face_names,known_face_encodings):
         super(StartExam,self).__init__()
         loadUi("ui/ExamWindow.ui",self)
-        self.__running=True
+        self.__running=False
         self.label_sn_set.setText(sn)
         self.label_en_set.setText(en)
+        self.exam_ongoing_alert.setText("시험 대기 중")
         self.finishButton.clicked.connect(self.finishExam)
         self.known_face_names=known_face_names
         self.known_face_encodings=known_face_encodings
@@ -243,7 +245,7 @@ class StartExam(QMainWindow):
     def finishExam(self):
         print('came back-finish')
         self.__running=False
-        qsignal.run()
+        qsignal.quit()
 
         #얼굴 인식 기능
         self.worker_fr.wait(5000)
@@ -263,7 +265,7 @@ class StartExam(QMainWindow):
         data["type"]="부적절한 키보드 입력("+str(key)+")감지됨"
         data["date"]=str(datetime.now().strftime('%Y-%m-%d %H:%M:%S'))
         data["image"]="None"
-        res=requests.post("http://172.30.1.39:5000/test_room/log/" + en + "/" +sn,data=data)
+        res=requests.post("http://"+server+"/test_room/log/" + en + "/" +sn,data=data)
         self.log_list.append(data["type"]+'\n'+data["date"]+'\n')
         print('sent')
 
@@ -275,9 +277,9 @@ class FaceRecognition(QThread):
         self.end_min=self.parent.end_min
         self.sn=sn
         self.en=en
-        self.__running=True
+        self.__running=False
         self.timeout=False
-        qsignal.quit_signal.connect(self.signal_emitted)
+        qsignal.quit_signal.connect(self.quit_signal_emitted)
         
     
     def run(self):
@@ -285,20 +287,15 @@ class FaceRecognition(QThread):
         while self.__running:
             face_recog.get_frame()
 
-            currentHour = datetime.now().hour
-            currentMinute = datetime.now().minute
-            if currentHour>int(self.end_hour) or (currentHour==self.end_hour and currentMinute>=int(self.end_min)):
-                print('나감~~')
-                self.timeout=True
-                break
-
         face_recog.stop()
 
-        if self.timeout==True:
-            self.parent.finishExam()
 
     @pyqtSlot()
-    def signal_emitted(self):
+    def start_signal_emitted(self):
+        print('시작신호 옴')
+        self.__running=True
+
+    def quit_signal_emitted(self):
         print('종료신호 옴')
         self.__running=False
 
@@ -307,8 +304,8 @@ class MacKeyboardDetector(QThread):
     def __init__(self,parent):
         super().__init__(parent)
         self.parent=parent
-        self.__running=True
-        qsignal.quit_signal.connect(self.signal_emitted)
+        self.__running=False
+        qsignal.quit_signal.connect(self.quit_signal_emitted)
 
     def run(self):
         while self.__running:
@@ -323,7 +320,11 @@ class MacKeyboardDetector(QThread):
             time.sleep(0.2)
 
     @pyqtSlot()
-    def signal_emitted(self):
+    def start_signal_emitted(self):
+        print('시작신호 옴')
+        self.__running=True
+
+    def quit_signal_emitted(self):
         print('종료신호 옴')
         self.__running=False
 
@@ -331,8 +332,8 @@ class WinKeyboardDetector(QThread):
     def __init__(self,parent):
         super().__init__(parent)
         self.parent=parent
-        self.__running=True
-        qsignal.quit_signal.connect(self.signal_emitted)
+        self.__running=False
+        qsignal.quit_signal.connect(self.quit_signal_emitted)
     
     def run(self):
         while self.__running:
@@ -349,7 +350,11 @@ class WinKeyboardDetector(QThread):
                 self.parent.send_keyboard_log(self.parent.sn,self.parent.en,'win')
 
     @pyqtSlot()
-    def signal_emitted(self):
+    def start_signal_emitted(self):
+        print('시작신호 옴')
+        self.__running=True
+
+    def quit_signal_emitted(self):
         print('종료신호 옴')
         self.__running=False
 
@@ -357,8 +362,8 @@ class MacKiller(QThread):
     def __init__(self,n,parent):
         super().__init__(parent)
         self.parent=parent
-        self.__running=True
-        qsignal.quit_signal.connect(self.signal_emitted)
+        self.__running=False
+        qsignal.quit_signal.connect(self.quit_signal_emitted)
         self.n=n
 
     def run(self):
@@ -380,7 +385,11 @@ class MacKiller(QThread):
         print('finish killer thread')
 
     @pyqtSlot()
-    def signal_emitted(self):
+    def start_signal_emitted(self):
+        print('시작신호 옴')
+        self.__running=True
+
+    def quit_signal_emitted(self):
         print('종료신호 옴')
         self.__running=False
 
@@ -388,12 +397,13 @@ class WinKiller(QThread):
     def __init__(self,name,parent):
         super().__init__(parent)
         self.parent=parent
-        self.__running=True
-        qsignal.quit_signal.connect(self.signal_emitted)
+        self.__running=False
+        qsignal.quit_signal.connect(self.quit_signal_emitted)
         self.name=name
     
     def run(self):
         while self.__running :
+            time.sleep(3)
             kill = os.system(f"taskkill /f /im {self.name}")
 
             if kill == 0 or kill == 1:
@@ -402,7 +412,11 @@ class WinKiller(QThread):
                 print(f'{self.name} is Not Running')
 
     @pyqtSlot()
-    def signal_emitted(self):
+    def start_signal_emitted(self):
+        print('시작신호 옴')
+        self.__running=True
+
+    def quit_signal_emitted(self):
         print('종료신호 옴')
         self.__running=False
     
@@ -410,8 +424,8 @@ class GetScreen(QThread):
     def __init__(self,sn,en,parent):
         super().__init__(parent)
         self.parent=parent
-        self.__running=True
-        qsignal.quit_signal.connect(self.signal_emitted)
+        self.__running=False
+        qsignal.quit_signal.connect(self.quit_signal_emitted)
         self.sn=sn
         self.en=en
     
@@ -438,11 +452,19 @@ class GetScreen(QThread):
                 }
 
                 # HTTP로 화면 이미지 전송
-                res = requests.post(f'http://172.30.1.39:5000/test_room/share_screen/{self.en}/{self.sn}', data=data)
+                res = requests.post(f'http://'+server+'/test_room/share_screen/{self.en}/{self.sn}', data=data)
+                if(self._running==False and res.json()["state"]==200) :#시작신호가 온 경우
+                    qsignal.start()
+                if(self._running==True and res.json()["state"]==400) :#종료신호가 온 경우
+                    self.parent.finishExam()
                 time.sleep(1)
 
     @pyqtSlot()
-    def signal_emitted(self):
+    def start_signal_emitted(self):
+        print('시작신호 옴')
+        self.__running=True
+
+    def quit_signal_emitted(self):
         print('종료신호 옴')
         self.__running=False
 
@@ -460,4 +482,14 @@ widget.setFixedWidth(360)
 widget.setFixedHeight(480)
 widget.show()
 qsignal=Controller()
-app.exec_()
+exit=app.exec_()
+if exit==0:
+    print('프로그램 종료')
+    image_byte = open('./exit.png', 'rb').read()
+    data = {
+                "image": base64.b64encode(image_byte).decode()
+            }
+
+    # HTTP로 화면 이미지 전송
+    r = requests.post(f'http://'+server+'/test_room/share_screen/{self.en}/{self.sn}', data=data)
+    
