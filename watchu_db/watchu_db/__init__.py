@@ -45,7 +45,5 @@ def create_app():
 
 
 if __name__ == '__main__':
-    create_app().run(debug=True)
-    # create_app().run(host="172.30.1.2", port=5000, debug=True)
-    # create_app().run(host="10.23.48.49", port=5000, debug=True)
-    # create_app().run(host="192.168.43.233", port=5000, debug=True)
+    # create_app().run(debug=True)
+    create_app().run(host="10.27.0.13", port=5000, debug=True)
