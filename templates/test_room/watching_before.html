@@ -1,0 +1,21 @@
+{% extends 'base.html' %}
+{% block content %}
+
+<div style="width: 90%; margin: 25px auto;">
+    <h2 class="text-center pt-2"><strong>{{ title }}</strong><span class="btn btn-dark btn-sm ml-2 mb-1"><strong>시작전</strong></span></h2>
+    <!-- <h3 class="text-center pt-2"><strong>시험 시작 전</strong></h3> -->
+    <h4 class="text-center border-bottom pb-3">시험 번호 : {{ test_room_id }} / 시험 시간 : {{ start_date }} ~ {{ end_date }} / 학생 수 : {{ student_list|length }}</h4>
+
+    <div style="width: 100%; margin: 0 auto;">
+        {% for student_id in student_list %}
+            <button class="btn btn-primary p-1 mb-1" id="{{ student_id }}"style="width: 430px;">
+                <img src="../../static/no_screen.png" width="100%"/>
+                <h4 class="pt-3">{{ student_id }}</h4>
+            </button>
+        {% endfor %}
+    </div>
+</div>
+<a href="{{ url_for('test_room.start', test_room_id=test_room_id) }}" class="btn btn-success btn-lg" id="startTestRoomBtn" style="position: fixed; bottom: 5%; left: 2%;"><strong>시험 시작</strong></a>
+<!-- <button  class="btn btn-success btn-lg" id="startTestRoomBtn" style="position: fixed; bottom: 5%; left: 2%;"><strong>시험 시작</strong></button> -->
+
+{% endblock %}
