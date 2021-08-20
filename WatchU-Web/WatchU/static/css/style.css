@@ -116,7 +116,7 @@ p, span, li {
     display: inline-block;
 }
 
-.area__watchingDetail .container2 div {
+#log_list {
     max-height: 490px; 
     overflow-y: scroll;
 }

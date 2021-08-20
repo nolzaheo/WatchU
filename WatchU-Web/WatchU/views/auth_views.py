@@ -9,8 +9,19 @@ from WatchU.models import Professor
 bp = Blueprint('auth', __name__, url_prefix='/auth')
 
 
+def login_required(view):
+    """ 로그인 여부 확인 데코레이터 (로그인전) """
+    @functools.wraps(view)
+    def wrapped_view(**kwargs):
+        if g.user is None:
+            return redirect(url_for('auth.login_professor'))
+        return view(**kwargs)
+
+    return wrapped_view
+
+
 def login_not_required(view):
-    """ 로그인 여부 확인 데코레이터 """
+    """ 로그인 여부 확인 데코레이터 (로그인후) """
     @functools.wraps(view)
     def wrapped_view(**kwargs):
         if g.user is not None:
@@ -74,17 +85,6 @@ def logout_professor():
     """ 교수 로그아웃 """
     session.clear()
     return redirect(url_for('auth.login_professor'))
-
-
-def login_required(view):
-    """ 로그인 여부 확인 데코레이터 """
-    @functools.wraps(view)
-    def wrapped_view(**kwargs):
-        if g.user is None:
-            return redirect(url_for('auth.login_professor'))
-        return view(**kwargs)
-
-    return wrapped_view
 
 
 @bp.route('/student_exe_download')

@@ -7,7 +7,7 @@
 
     <div class="container container1 p-3 float-left">
         <h3 class="text-center border-bottom py-2">학생 화면</h3>
-        <img src="{{ url_for('test_room.screen_socket_feed', test_room_id=test_room_id, student_id=student_id) }}" width="100%"/>
+        <img class="{{ student_id }}" src="/static/img/no_screen.png" width="100%"/>
     </div>
 
     <div class="container container2 p-3 float-left">
@@ -63,6 +63,30 @@
         timeoutHnd = setTimeout('log_ajax();', timeInterval);
     }
 
+    // 지속적으로 화면 이미지 요청 및 변경
+    let timeoutHnd_ = null;
+    let timeInterval_ = 0.5 * 1000;
+
+    function image_ajax() {
+        $.ajax({
+            url: '{{ url_for("test_room.watching_detail_image_ajax", test_room_id=test_room_id, student_id=student_id) }}', 
+            type: 'POST', 
+            dataType: 'JSON', 
+            success: (json_data) => {
+                $("." + "{{ student_id }}").attr("src", "data:image/jpeg;base64," + json_data["image"]);
+            }, 
+            error: () => {
+                console.log("Image ajax error!!");
+            }
+        });
+        resetTimer_();
+    }
+
+    function resetTimer_() {
+        clearTimeout(timeoutHnd_);
+        timeoutHnd_ = setTimeout('image_ajax();', timeInterval_);
+    }
+
     // 다큐먼트 로드 시
     $(document).ready(() => {
         // 로그 데이터 로딩
@@ -81,6 +105,10 @@
 
         // 지속적으로 부정행위 로그 요청
         timeoutHnd = setTimeout('log_ajax();', timeInterval); 
+    
+        // 지속적으로 화면 이미지 요청 및 변경
+        timeoutHnd_ = setTimeout('image_ajax();', timeInterval_); 
+
     });
 </script>
 
