@@ -1,0 +1,26 @@
+{% extends 'base.html' %}
+{% block content %}
+
+<div class="card card__watchingResult">
+    <div class="card-body">
+        <h3 class="card-title text-center pt-2"><strong>시험 결과</strong></h3>
+        <p class="card-title text-center border-bottom pb-2">부정 행위 감지 횟수가 많은 순서로 정렬되어있습니다.</p>
+        <div class="card-text">
+            <ul class="list-group item-info-group">
+                {% for student_id, count in result_list %}
+                <li class="list-group-item mt-2">
+                    {% if loop.index < 4 %}
+                        <span><mark>학생 번호 : {{ student_id }} 감지 횟수 : {{ count }}</mark></span>
+                        <a href="{{ url_for('test_room.watching_result_detail', test_room_id=test_room_id, student_id=student_id) }}" class="btn btn-primary m-1 float-right">더보기</a>
+                    {% else %}
+                        <span>학생 번호 : {{ student_id }} 감지 횟수 : {{ count }}</span>
+                        <a href="{{ url_for('test_room.watching_result_detail', test_room_id=test_room_id, student_id=student_id) }}" class="btn btn-primary m-1 float-right">더보기</a>
+                    {% endif %}
+                </li>
+                {% endfor %}
+            </ul>
+        </div>
+    </div>
+</div>
+
+{% endblock %}

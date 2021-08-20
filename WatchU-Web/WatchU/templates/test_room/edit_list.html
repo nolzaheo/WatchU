@@ -1,0 +1,28 @@
+{% extends 'base.html' %}
+{% block content %}
+
+<div class="card card__editList card__global2">
+    <div class="card-body">
+        <h3 class="card-title text-center pt-2"><strong>시험 수정</strong></h3>
+        <p class="card-title text-center border-bottom pb-2">시험을 수정하거나 삭제할 수 있습니다.</p>
+        <div class="card-text">
+            <ul class="list-group item-info-group">
+                {% for id, state, title, start, end in test_room_list %}
+                    {% if state == "before" %}
+                        <li class="list-group-item mt-2">
+                            <span class="item-info row p-1">
+                                <span class="item-info"><strong>시험 제목 : {{ title }}</strong></span>
+                                <span class="item-info">시험 번호 : {{ id }}</span>
+                                <span class="item-info">시험 시간 : {{ start }} ~ {{ end }}</span>
+                            </span>
+                            <a href="{{ url_for('test_room.edit', test_room_id=id) }}" class="btn btn-success m-1 float-right"><strong>수정</strong></a>
+                            <a href="{{ url_for('test_room.delete', test_room_id=id) }}" class="btn btn-danger m-1 float-right"><strong>삭제</strong></a>
+                        </li>
+                    {% endif %}
+                {% endfor %}
+            </ul>
+        </div>
+    </div>
+</div>
+
+{% endblock %}

@@ -1,0 +1,33 @@
+{% extends 'base.html' %}
+{% block content %}
+
+<div class="card card__login card__global">
+    <div class="card-body">
+        <h2 class="card-title text-center border-bottom py-2"><strong>교수 로그인</strong></h2>
+        <div class="card-text">
+            <form method="post" class="post-form">
+                {{ form.csrf_token }}
+                {% include "form_errors.html" %}
+                <div class="form-group">
+                    <label for="id">교수번호</label>
+                    <input type="text" class="form-control" name="id" id="id"
+                        value="{{ form.id.data or '' }}">
+                </div>
+                <div class="form-group">
+                    <label for="password">비밀번호</label>
+                    <input type="password" class="form-control" name="password" id="password"
+                        value="{{ form.password.data or '' }}">
+                </div>
+                <button type="submit" class="btn btn-primary btn-lg btn-block">로그인</button>
+                <a href="{{ url_for('auth.signup_professor') }}" class="btn btn-primary btn-lg btn-block">회원가입</a>
+                <a href="{{ url_for('auth.student_exe_download') }}" class="btn btn-primary btn-lg btn-block">
+                    <img src="/static/img/books.png" alt="books">
+                    <strong>학생 프로그램 다운로드</strong>
+                    <img src="/static/img/books.png" alt="books">
+                </a>
+            </form>
+        </div>
+    </div>
+</div>
+
+{% endblock %}

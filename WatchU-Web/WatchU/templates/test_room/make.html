@@ -1,0 +1,172 @@
+{% extends 'base.html' %}
+{% block content %}
+
+<div class="area__make area__global">
+    <h2 class="text-center pt-2"><strong>시험 생성</strong></h2>
+    <h4 class="text-center border-bottom pb-3">시험 번호 : {{ test_room_id }}</h4>
+
+    <div class="container container1 my-3 mx-4 float-left">
+        <h3 class="text-center border-bottom py-2">시험 제목 입력</h3>
+        <div class="form-group">
+            <input type="text" class="form-control" name="title" id="title">
+        </div>
+        <h3 class="text-center border-bottom py-2 mt-2">시험 시간 설정</h3>
+        <form>
+            <div><input type="date" id="dateForm"></div>
+            <div class="mt-2">
+                <input type="time" id="starttimeForm">
+                ~
+                <input type="time" id="endtimeForm">
+            </div>
+        </form>
+    </div>
+        
+    <div class="container container2 my-3 mx-4 float-left">
+        <h3 class="text-center border-bottom py-2">차단 프로그램 선택</h3>
+        <ul class="list-group">
+            {% for program in program_list %}
+                <li class="list-group-item mb-2">
+                    <div class="form-checkbox ml-3">
+                        <input class="form-check-input" type="checkbox" value="" id="checkbox-input{{ loop.index - 1 }}">
+                        <label class="form-check-label" for="checkbox{{ loop.index - 1 }}" id="checkbox-label{{ loop.index - 1 }}">{{ program }}</label>
+                    </div>
+                </li>
+            {% endfor %}
+        </ul>
+    </div>
+        
+    <div class="container container3 my-3 mx-4 float-left">
+        <h3 class="text-center border-bottom py-2">학생 등록</h3>
+        <form enctype="multipart/form-data">
+            <ul class="list-group mb-3">
+                <li class="list-group-item">1. 학생 사진을 등록하십시오.</li>
+                <li class="list-group-item">2. 파일 이름을 학번으로 설정하십시오.</li>
+            </ul>
+            <div class="custom-file">
+                <input type="file" class="custom-file-input" id="input_images" name="images[]" multiple>
+                <label class="custom-file-label" data-browse="Browse">예) 20170843.jpg</label>
+            </div>
+        </form>
+        <h3 class="text-center border-bottom py-2 mt-4">등록한 학생 리스트</h3>
+        <div id="image_list"></div>
+    </div>
+</div>
+
+<button class="btn btn-success btn-lg" id="makeTestRoomBtn"><strong>시험 생성</strong></button>
+
+<script>    
+    // 현재 날짜로 설정
+    let today = new Date().toISOString();
+    let dateForm = document.getElementById('dateForm');
+    dateForm.value = today.slice(0, 10);
+    dateForm.min = today.slice(0, 10);
+
+    // 시작 시간 변경 시 종료 시간 자동 변경 (+1시간)
+    $('#starttimeForm').change(() => {
+        startTime = $('#starttimeForm').val();
+        h = Number(startTime.slice(0, 2)) + 1;
+        if (h < 10) {
+            h = '0' + h;
+        }
+        m = startTime.slice(3, 5);
+        $('#endtimeForm').attr({'value': h + ':' + m});
+    });
+    
+    // 학생 리스트에 추가
+    let image_list = [];
+    const input_images = document.getElementById("input_images");
+    input_images.addEventListener("change", uploadImages, false);
+    function uploadImages() {
+        const images = this.files;
+        let bufferLen = image_list.length;
+        for (let i = 0; i < images.length; i++) {
+            const image = images[i];
+            image_list.push(image);
+            let div1 = document.createElement("div");
+            div1.className = "card mt-1 mb-1";
+            div1.style.width = "100%";
+            let div2 = document.createElement("div");
+            div2.className = "row no-gutters";
+
+            let img = document.createElement("img");
+            img.src = URL.createObjectURL(image);
+            img.style = "max-width:100px; max-height: 130px;";
+            div2.appendChild(img);
+
+            let div3 = document.createElement("div");
+            div3.className = "card-body";
+
+            let span = document.createElement("span");
+            span.className = "card-text";
+            span.style = "white-space: pre-line;";
+            span.innerText = image.name;
+            div3.appendChild(span);
+
+            let button = document.createElement("button");
+            button.className = "btn btn-primary float-right deleteImgBtn" + (i + bufferLen);
+            button.innerText = "삭제";
+            button.addEventListener("click", deleteImage);
+            div3.appendChild(button);
+
+            div2.appendChild(div3);
+            div1.appendChild(div2);
+            document.getElementById("image_list").appendChild(div1);
+        }
+    }
+
+    // 학생 리스트에서 삭제
+    function deleteImage() {
+        let index = $(this).parent().parent().parent().index();
+        image_list.splice(index,1);
+        this.parentNode.parentNode.parentNode.parentNode.removeChild(this.parentNode.parentNode.parentNode);
+    }
+
+    // 시험 생성 버튼 클릭 시 서버로 데이터 전송
+    $('#makeTestRoomBtn').click( function () { 
+
+        // 차단 프로그램 리스트 받아오기 (CheckBox)
+        let block_list_string = "";
+        for (let i = 0; i < '{{ program_list|length }}'; i++) {
+            text = $('#checkbox-label' + i).text();
+            if($('#checkbox-input' + i).is(":checked") === true) {
+                block_list_string += text + ";";
+            }
+        }
+
+        // 전송 할 폼데이터 생성
+        let formdata = new FormData();
+        formdata.append('test_room_id', '{{ test_room_id }}');
+        formdata.append('professor_id', '{{ g.user.id }}');
+        formdata.append('title', $('#title').val());
+        formdata.append('block_list', block_list_string);
+        formdata.append('date', document.getElementById('dateForm').value);
+        formdata.append('start_time', document.getElementById('starttimeForm').value);
+        formdata.append('end_time', document.getElementById('endtimeForm').value);
+        formdata.append('length', image_list.length);
+        for (let i = 0; i < image_list.length; i++) {
+            formdata.append(i, image_list[i]);
+        }
+         
+        // ajax 전송
+        $.ajax({
+            url: '{{ url_for("test_room.make_ajax") }}',
+            type: 'POST',
+            contentType: false,
+            processData: false,
+            data: formdata,
+            success: function(response) {
+                console.log("Make ajax 통신 성공!" + response);
+            },
+            error: function(request, status, error) {
+                console.log("Make ajax 통신 실패!", status, error);
+            }
+        });
+
+        // 메뉴 페이지로 이동
+        // alert("시험이 생성되었습니다!!");
+        location.href="{{ url_for('test_room.menu') }}";
+   });
+
+</script>
+
+{% endblock %}

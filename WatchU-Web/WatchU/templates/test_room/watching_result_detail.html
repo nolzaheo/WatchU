@@ -1,0 +1,51 @@
+{% extends 'base.html' %}
+{% block content %}
+
+<div class="card card__watchingResultDetail">
+    <div class="card-body">
+        <h3 class="card-title text-center pt-2"><strong>{{ student_id }}번 학생</strong></h3>
+        <h4 class="card-title text-center"><strong>학생 부정행위 로그 리스트</strong></h4>
+        <p class="card-title text-center border-bottom pb-2">시험 번호 : {{ test_room_id }}</p>
+        <div class="card-text">
+            <div id="log_list"></div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // 로그 리스트에 추가
+    function addLog(type, date, image) {
+        html = '';
+        html += '<div class="card mt-1 mb-1" style="width: 100%;">';
+        html += '<div class="row no-gutters">';
+        html += '<div class="card-body">';
+        html += '<span class="card-text" style="white-space: pre-line;">' + type + '</span>';
+        html += '<span class="card-text" style="white-space: pre-line;"><br>' + date + '</span>';
+        if(image === 'data:image/jpeg;base64,' + 'None' || image === 'None') {}
+        else {
+            html += '<img class="float-right" src="' + image + '" style="max-width:200px; max-height: auto;">';
+        }
+        html += '</div></div></div>';
+        $('#log_list').append(html);
+    }
+
+    // 다큐먼트 로드 시
+    $(document).ready(() => {
+        // 로그 데이터 로딩
+        '{% for log in log_list %}';
+            type = '{{ log["type"] }}';
+            date = '{{ log["date"] }}';
+            image = "";
+            if ('{{ log["image"] }}' === "None") {
+                image = "None"
+            }
+            else {
+                image = "data:image/jpeg;base64," + '{{ log["image"] }}';
+            }
+            // console.log(type, date, image);
+            addLog(type, date, image);
+        '{% endfor %}'
+    });   
+</script>
+
+{% endblock %}

@@ -1,0 +1,32 @@
+{% extends 'base.html' %}
+{% block content %}
+
+<div class="card card__watchingList card__global2">
+    <div class="card-body">
+        <h3 class="card-title text-center pt-2"><strong>시험 입장</strong></h3>
+        <p class="card-title text-center border-bottom pb-2">시험에 입장하거나 결과를 확인할 수 있습니다.</p>
+        <div class="card-text">
+            <ul class="list-group item-info-group">
+                {% for id, state, title, start, end in test_room_list %}
+                    <li class="list-group-item mt-2">
+                        <span class="item-info row p-1">
+                            <span class="item-info"><strong>시험 제목 : {{ title }}</strong></span>
+                            <span class="item-info">시험 번호 : {{ id }}</span>
+                            <span class="item-info">시험 시간 : {{ start }} ~ {{ end }}</span>
+                        </span>
+                        {% if state == "before" %}
+                            <a href="{{ url_for('test_room.watching_before', test_room_id=id) }}" class="btn btn-success float-right mt-3"><strong>입장</strong></a>
+                        {% elif state == "watching" %}
+                            <a href="{{ url_for('test_room.watching', test_room_id=id) }}" class="btn btn-info float-right mt-3"><strong>시험중</strong></a>
+                        {% elif state == "result" %}
+                            <a href="{{ url_for('test_room.watching_result', test_room_id=id) }}" class="btn btn-danger float-right mt-3"><strong>결과</strong></a>
+                        {% else %}
+                        {% endif %}
+                    </li>
+                {% endfor %}
+            </ul>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
