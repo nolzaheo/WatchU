@@ -1,0 +1,95 @@
+{% extends 'base.html' %}
+{% block content %}
+
+<div class="area__watching area__global">
+    <h2 class="text-center pt-2"><strong>{{ title }}</strong><span class="btn btn-dark btn-sm ml-2 mb-1"><strong>시험중</strong></span></h2>
+    <h4 class="text-center border-bottom pb-3">시험 번호 : {{ test_room_id }} / 시험 시간 : {{ start_date }} ~ {{ end_date }} / 학생 수 : {{ student_list|length }}</h4>
+    <div class="screen-group">
+        {% for student_id in student_list %}
+            <a href="{{ url_for('test_room.watching_detail', test_room_id=test_room_id, student_id=student_id) }}" class="btn btn-primary p-1 mb-1" id="{{ student_id }}">
+                <img class="{{ student_id }}" src="/static/img/no_screen.png" width="100%"/>
+                <h4 class="pt-3">{{ student_id }}</h4>
+            </a>
+        {% endfor %}
+    </div>
+</div>
+
+<a href="{{ url_for('test_room.terminate', test_room_id=test_room_id) }}" class="btn btn-danger btn-lg" id="terminateTestRoomBtn"><strong>시험 종료</strong></a>
+
+
+<script>
+    // 지속적으로 부정행위 로그 요청
+    let timeoutHnd = null;
+    let timeInterval = 2 * 1000;
+
+    function log_ajax() {
+        $.ajax({
+            url: '{{ url_for("test_room.watching_log_ajax", test_room_id=test_room_id) }}', 
+            type: 'POST', 
+            dataType: 'JSON', 
+            success: (json_list) => {
+                if(json_list[0]["length"] !== "0") {
+                    for(let i = 1; i < json_list.length; i++) {
+                        console.log(i, json_list[i]["student_id"]);
+                        // 빨간색으로 색상 변경
+                        $('#' + json_list[i]["student_id"]).css('background-color', 'red');
+                
+                        // 1초 후 색상 복원
+                        setTimeout(() => {
+                            $('#' + json_list[i]["student_id"]).css('background-color', '#ffe699');
+                        }, 1000); 
+                    }
+                }
+            }, 
+            error: () => {
+                console.log("Log ajax error!!");
+            }
+        });
+
+        resetTimer();
+    }
+
+    function resetTimer() {
+        clearTimeout(timeoutHnd);
+        timeoutHnd = setTimeout('log_ajax();', timeInterval);
+    }
+
+    // 지속적으로 화면 이미지 요청 및 변경
+    let timeoutHnd_ = null;
+    let timeInterval_ = 0.5 * 1000;
+
+    function image_ajax() {
+        $.ajax({
+            url: '{{ url_for("test_room.watching_image_ajax", test_room_id=test_room_id) }}', 
+            type: 'POST', 
+            dataType: 'JSON', 
+            success: (json_list) => {
+                for(let i = 0; i < json_list.length; i++) {
+                    $("." + json_list[i]["student_id"]).attr("src", "data:image/jpeg;base64," + json_list[i]["image"]);
+                }
+            }, 
+            error: () => {
+                console.log("Log ajax error!!");
+            }
+        });
+        resetTimer_();
+    }
+
+    function resetTimer_() {
+        clearTimeout(timeoutHnd_);
+        timeoutHnd_ = setTimeout('image_ajax();', timeInterval_);
+    }
+
+    // 다큐먼트 로드 시
+    $(document).ready(() => {   
+        // 지속적으로 부정행위 로그 요청
+        timeoutHnd = setTimeout('log_ajax();', timeInterval); 
+
+        // 지속적으로 화면 이미지 요청 및 변경
+        timeoutHnd_ = setTimeout('image_ajax();', timeInterval_); 
+
+    });
+    
+</script>
+
+{% endblock %}

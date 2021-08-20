@@ -1,0 +1,15 @@
+{% extends 'base.html' %}
+{% block content %}
+
+<div class="card card__menu card__global">
+    <div class="card-body">
+        <h3 class="card-title text-center border-bottom py-2"><strong>메뉴</strong></h3>
+        <div class="card-text">
+            <a href="{{ url_for('test_room.make') }}" class="btn btn-primary btn-lg btn-block mb-1">시험 생성</a>
+            <a href="{{ url_for('test_room.edit_list') }}" class="btn btn-primary btn-lg btn-block mb-1">시험 수정</a>
+            <a href="{{ url_for('test_room.watching_list') }}" class="btn btn-primary btn-lg btn-block">시험 입장</a>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
