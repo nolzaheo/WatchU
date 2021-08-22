@@ -1,6 +1,6 @@
 import base64
 from datetime import datetime
-from flask import Blueprint, render_template, request, g, url_for, Response, jsonify
+from flask import Blueprint, render_template, request, g, url_for, jsonify
 from werkzeug.utils import redirect
 import secrets
 
@@ -101,7 +101,7 @@ def edit(test_room_id):
     for i in range(len(program_list)):
         if program_list[i] in block_list:
             block_list_.append(i)
-    return render_template(f'test_room/edit.html', test_room_id=test_room_id, title=title, program_list=program_list, date=date, start_time=start_time,
+    return render_template('test_room/edit.html', test_room_id=test_room_id, title=title, program_list=program_list, date=date, start_time=start_time,
                            end_time=end_time, block_list=block_list, block_list_=block_list_, student_list=student_list, image_list=image_list)
 
 
