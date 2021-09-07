@@ -205,6 +205,9 @@ def share_screen(test_room_id, student_id):
     """ HTTP로 화면 받기 """
     test_room = TestRoom.query.get(test_room_id)
     state = test_room.state
+
+    print(state)
+
     # 화면 이미지 저장
     if state == "watching":
         image = base64.b64decode(request.form["image"])
@@ -214,28 +217,6 @@ def share_screen(test_room_id, student_id):
     json = dict()
     json["state"] = state
     return jsonify(json)
-
-
-""" 제거 필요 """
-# def gen_frames(test_room_id, student_id):
-#     while True:
-#         test_room = TestRoom.query.get(test_room_id)
-#         state = test_room.state
-#         # 화면 이미지 저장
-#         if state == "watching":
-#             image = global_images[test_room_id][student_id] # 왜 에러??
-#         else:
-#             image = no_screen_image
-#         frame = bytearray(image)
-#         yield (b'--frame\r\n'
-#                b'Content-Type: image/png\r\n\r\n' + frame + b'\r\n')
-#
-#
-# @bp.route('/screen_socket_feed/<string:test_room_id>/<int:student_id>')
-# @auth_views.login_required
-# def screen_socket_feed(test_room_id, student_id):
-#     return Response(gen_frames(test_room_id, student_id), mimetype='multipart/x-mixed-replace; boundary=frame')
-""" 제거 필요 """
 
 
 @bp.route('/watching/<string:test_room_id>', methods=["GET"])
